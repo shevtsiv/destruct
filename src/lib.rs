@@ -1,5 +1,6 @@
 pub mod vector_based;
 pub mod stack;
+pub mod queue;
 
 #[cfg(test)]
 mod tests {
