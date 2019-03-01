@@ -25,6 +25,11 @@ impl<'a, T: PartialEq> GraphNode<'a, T> {
         }
     }
 
+    pub fn remove_line(&mut self, node: &'a GraphNode<T>) {
+        let index = self.lines.iter().position(|node_to_delete| node_to_delete == &node).unwrap();
+        self.lines.remove(index);
+    }
+
     pub fn new(value: T) -> Self {
         GraphNode { value, lines: Vec::new() }
     }
