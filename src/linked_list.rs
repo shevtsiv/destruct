@@ -1,16 +1,16 @@
 use std::rc::Rc;
 
 #[derive(PartialOrd, PartialEq, Debug)]
-pub struct LinkedListNode<T> {
+pub struct LinkedListNode<T: PartialEq> {
     data: T,
     next_node: Option<Rc<LinkedListNode<T>>>,
 }
 
-pub struct LinkedList<T> {
+pub struct LinkedList<T: PartialEq> {
     head: Option<Rc<LinkedListNode<T>>>,
 }
 
-impl<T> LinkedListNode<T> {
+impl<T: PartialEq> LinkedListNode<T> {
     pub fn get_data(&self) -> &T {
         &self.data
     }
@@ -36,7 +36,7 @@ impl<T> LinkedListNode<T> {
     }
 }
 
-impl<T> LinkedList<T> {
+impl<T: PartialEq> LinkedList<T> {
     pub fn get_head(&self) -> Option<&Rc<LinkedListNode<T>>> {
         self.head.as_ref()
     }
@@ -111,6 +111,30 @@ impl<T> LinkedList<T> {
         let old_head = self.head.as_ref().unwrap().to_owned();
         let new_head = LinkedListNode { data: value, next_node: Some(old_head) };
         self.head = Some(Rc::from(new_head));
+    }
+
+    pub fn find(&self, value: &T) -> Option<&Rc<LinkedListNode<T>>> {
+        if let Some(head) = &self.head {
+            if &head.data == value {
+                return Some(head);
+            }
+            let mut tail = head.next_node.as_ref();
+            if tail.is_none() {
+                return None;
+            }
+            loop {
+                if tail.is_none() {
+                    return None;
+                } else {
+                    if &tail.unwrap().data == value {
+                        return tail;
+                    }
+                    tail = tail.unwrap().next_node.as_ref();
+                }
+            }
+        } else {
+            return None;
+        }
     }
 }
 
@@ -192,5 +216,33 @@ mod tests {
         list.add_first(15);
         assert_eq!(list.get_head().unwrap().get_data(), &15);
         assert_eq!(list.get_tail().unwrap().get_data(), &3);
+    }
+
+    #[test]
+    fn find() {
+        let deep_tail = LinkedList {
+            head: Some(Rc::from(LinkedListNode {
+                data: 1,
+                next_node: Some(Rc::from(LinkedListNode {
+                    data: 2,
+                    next_node: Some(Rc::from(LinkedListNode {
+                        data: 3,
+                        next_node: Some(Rc::from(LinkedListNode {
+                            data: 4,
+                            next_node: Some(Rc::from(LinkedListNode {
+                                data: 5,
+                                next_node: None,
+                            })),
+                        })),
+                    })),
+                })),
+            }))
+        };
+        assert_eq!(deep_tail.find(&1).unwrap(), deep_tail.get_head().unwrap());
+        assert_eq!(deep_tail.find(&2).unwrap().get_next().as_ref().unwrap().get_data(), &3);
+        assert_eq!(deep_tail.find(&3).unwrap().get_next().as_ref().unwrap().get_data(), &4);
+        assert_eq!(deep_tail.find(&4).unwrap().get_next().as_ref().unwrap().get_data(), &5);
+        assert_eq!(deep_tail.find(&5).unwrap().get_next(), &None);
+        assert_eq!(deep_tail.find(&6), None);
     }
 }
