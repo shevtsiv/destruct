@@ -68,8 +68,43 @@ impl<T> LinkedList<T> {
         }
     }
 
+    // Is this return value correct?
+    pub fn get_tail_mut(&mut self) -> Option<&mut LinkedListNode<T>> {
+        // Empty LinkedList has no head
+        if self.head.is_some() {
+            // If head is a tail (LinkedList with only element)
+            if self.head.as_ref().unwrap().next_node.is_none() {
+                return Some(Rc::get_mut(self.head.as_mut().unwrap()).unwrap());
+            }
+            let mut tail = Rc::get_mut(self.head.as_mut().unwrap()).unwrap();
+            loop { // Loop until the last node is found
+                if tail.next_node.is_none() {
+                    // It is the last node in the list
+                    return Some(tail);
+                } else {
+                    // Move on to the next node
+                    tail = Rc::get_mut(tail.next_node.as_mut().unwrap()).unwrap();
+                }
+            }
+        } else {
+            return None;
+        }
+    }
+
     pub fn new() -> Self {
         LinkedList { head: None }
+    }
+
+    pub fn add(&mut self, value: T) {
+        let tail = self.get_tail_mut();
+        match tail {
+            Some(tail) => {
+                tail.set_next(LinkedListNode { data: Some(value), next_node: None });
+            }
+            None => {
+                self.head = Some(Rc::from(LinkedListNode { data: Some(value), next_node: None }))
+            }
+        }
     }
 }
 
@@ -120,5 +155,18 @@ mod tests {
             }))
         };
         assert_eq!(deep_tail.get_tail().unwrap().get_data().unwrap(), &5);
+    }
+
+    #[test]
+    fn add() {
+        let mut list = LinkedList::new();
+        list.add(1);
+        assert_eq!(list.get_tail().unwrap().get_data().unwrap(), &1);
+        list.add(2);
+        assert_eq!(list.get_tail().unwrap().get_data().unwrap(), &2);
+        list.add(3);
+        assert_eq!(list.get_tail().unwrap().get_data().unwrap(), &3);
+        list.add(9);
+        assert_eq!(list.get_tail().unwrap().get_data().unwrap(), &9);
     }
 }
