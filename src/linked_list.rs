@@ -106,6 +106,12 @@ impl<T> LinkedList<T> {
             }
         }
     }
+
+    pub fn add_first(&mut self, value: T) {
+        let old_head = self.head.as_ref().unwrap().to_owned();
+        let new_head = LinkedListNode { data: value, next_node: Some(old_head) };
+        self.head = Some(Rc::from(new_head));
+    }
 }
 
 #[cfg(test)]
@@ -168,5 +174,23 @@ mod tests {
         assert_eq!(list.get_tail().unwrap().get_data(), &3);
         list.add(9);
         assert_eq!(list.get_tail().unwrap().get_data(), &9);
+    }
+
+    #[test]
+    fn add_first() {
+        let mut list = LinkedList::new();
+        list.add(1);
+        list.add(2);
+        assert_eq!(list.get_head().unwrap().get_data(), &1);
+        assert_eq!(list.get_tail().unwrap().get_data(), &2);
+        list.add(3);
+        assert_eq!(list.get_head().unwrap().get_data(), &1);
+        assert_eq!(list.get_tail().unwrap().get_data(), &3);
+        list.add_first(0);
+        assert_eq!(list.get_head().unwrap().get_data(), &0);
+        assert_eq!(list.get_tail().unwrap().get_data(), &3);
+        list.add_first(15);
+        assert_eq!(list.get_head().unwrap().get_data(), &15);
+        assert_eq!(list.get_tail().unwrap().get_data(), &3);
     }
 }
