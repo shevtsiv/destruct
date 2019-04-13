@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 #[derive(PartialOrd, PartialEq, Debug)]
 pub struct LinkedListNode<T> {
-    data: Option<T>,
+    data: T,
     next_node: Option<Rc<LinkedListNode<T>>>,
 }
 
@@ -11,12 +11,12 @@ pub struct LinkedList<T> {
 }
 
 impl<T> LinkedListNode<T> {
-    pub fn get_data(&self) -> Option<&T> {
-        self.data.as_ref()
+    pub fn get_data(&self) -> &T {
+        &self.data
     }
 
-    pub fn get_data_mut(&mut self) -> Option<&mut T> {
-        self.data.as_mut()
+    pub fn get_data_mut(&mut self) -> &mut T {
+        &mut self.data
     }
 
     pub fn get_next(&self) -> &Option<Rc<LinkedListNode<T>>> {
@@ -99,10 +99,10 @@ impl<T> LinkedList<T> {
         let tail = self.get_tail_mut();
         match tail {
             Some(tail) => {
-                tail.set_next(LinkedListNode { data: Some(value), next_node: None });
+                tail.set_next(LinkedListNode { data: value, next_node: None });
             }
             None => {
-                self.head = Some(Rc::from(LinkedListNode { data: Some(value), next_node: None }))
+                self.head = Some(Rc::from(LinkedListNode { data: value, next_node: None }))
             }
         }
     }
@@ -124,29 +124,29 @@ mod tests {
         assert_eq!(empty.get_tail(), None);
         let has_tail = LinkedList {
             head: Some(Rc::from(LinkedListNode {
-                data: Some(1),
+                data: 1,
                 next_node: Some(Rc::from(LinkedListNode {
-                    data: Some(2),
+                    data: 2,
                     next_node: None,
                 })),
             }))
         };
-        assert_eq!(has_tail.get_tail().unwrap().get_data().unwrap(), &2);
+        assert_eq!(has_tail.get_tail().unwrap().get_data(), &2);
         let head_only = LinkedList {
-            head: Some(Rc::from(LinkedListNode { data: Some(1), next_node: None }))
+            head: Some(Rc::from(LinkedListNode { data: 1, next_node: None }))
         };
-        assert_eq!(head_only.get_tail().unwrap().get_data().unwrap(), &1);
+        assert_eq!(head_only.get_tail().unwrap().get_data(), &1);
         let deep_tail = LinkedList {
             head: Some(Rc::from(LinkedListNode {
-                data: Some(1),
+                data: 1,
                 next_node: Some(Rc::from(LinkedListNode {
-                    data: Some(2),
+                    data: 2,
                     next_node: Some(Rc::from(LinkedListNode {
-                        data: Some(3),
+                        data: 3,
                         next_node: Some(Rc::from(LinkedListNode {
-                            data: Some(4),
+                            data: 4,
                             next_node: Some(Rc::from(LinkedListNode {
-                                data: Some(5),
+                                data: 5,
                                 next_node: None,
                             })),
                         })),
@@ -154,19 +154,19 @@ mod tests {
                 })),
             }))
         };
-        assert_eq!(deep_tail.get_tail().unwrap().get_data().unwrap(), &5);
+        assert_eq!(deep_tail.get_tail().unwrap().get_data(), &5);
     }
 
     #[test]
     fn add() {
         let mut list = LinkedList::new();
         list.add(1);
-        assert_eq!(list.get_tail().unwrap().get_data().unwrap(), &1);
+        assert_eq!(list.get_tail().unwrap().get_data(), &1);
         list.add(2);
-        assert_eq!(list.get_tail().unwrap().get_data().unwrap(), &2);
+        assert_eq!(list.get_tail().unwrap().get_data(), &2);
         list.add(3);
-        assert_eq!(list.get_tail().unwrap().get_data().unwrap(), &3);
+        assert_eq!(list.get_tail().unwrap().get_data(), &3);
         list.add(9);
-        assert_eq!(list.get_tail().unwrap().get_data().unwrap(), &9);
+        assert_eq!(list.get_tail().unwrap().get_data(), &9);
     }
 }
