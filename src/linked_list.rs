@@ -113,6 +113,12 @@ impl<T: PartialEq> LinkedList<T> {
         self.head = Some(Rc::from(new_head));
     }
 
+    pub fn add_after(&mut self, value: T, after: &T) {
+        let after_node = self.find_mut(after).unwrap();
+        let next_node = after_node.get_next().to_owned();
+        after_node.set_next(LinkedListNode { data: value, next_node });
+    }
+
     pub fn find(&self, value: &T) -> Option<&Rc<LinkedListNode<T>>> {
         if let Some(head) = &self.head {
             if &head.data == value {
@@ -130,6 +136,26 @@ impl<T: PartialEq> LinkedList<T> {
                         return tail;
                     }
                     tail = tail.unwrap().next_node.as_ref();
+                }
+            }
+        } else {
+            return None;
+        }
+    }
+
+    pub fn find_mut(&mut self, value: &T) -> Option<&mut LinkedListNode<T>> {
+        if self.head.is_some() {
+            if &self.head.as_ref().unwrap().data == value {
+                return Some(Rc::get_mut(self.head.as_mut().unwrap()).unwrap());
+            }
+            let mut tail = Rc::get_mut(self.head.as_mut().unwrap()).unwrap();
+            loop {
+                if &tail.data == value {
+                    return Some(tail);
+                } else if tail.next_node.is_none() {
+                    return None;
+                } else {
+                    tail = Rc::get_mut(tail.next_node.as_mut().unwrap()).unwrap();
                 }
             }
         } else {
@@ -216,6 +242,45 @@ mod tests {
         list.add_first(15);
         assert_eq!(list.get_head().unwrap().get_data(), &15);
         assert_eq!(list.get_tail().unwrap().get_data(), &3);
+    }
+
+    #[test]
+    fn add_after() {
+        let mut list = LinkedList::new();
+        list.add(1);
+        list.add(2);
+        list.add(3);
+        list.add(4);
+        assert_eq!(list.find(&1).unwrap().to_owned(), Rc::from(LinkedListNode {
+            data: 1,
+            next_node: Some(Rc::from(LinkedListNode {
+                data: 2,
+                next_node: Some(Rc::from(LinkedListNode {
+                    data: 3,
+                    next_node: Some(Rc::from(LinkedListNode {
+                        data: 4,
+                        next_node: None,
+                    })),
+                })),
+            })),
+        }));
+        list.add_after(5, &3);
+        assert_eq!(list.find(&1).unwrap().to_owned(), Rc::from(LinkedListNode {
+            data: 1,
+            next_node: Some(Rc::from(LinkedListNode {
+                data: 2,
+                next_node: Some(Rc::from(LinkedListNode {
+                    data: 3,
+                    next_node: Some(Rc::from(LinkedListNode {
+                        data: 5,
+                        next_node: Some(Rc::from(LinkedListNode {
+                            data: 4,
+                            next_node: None,
+                        })),
+                    })),
+                })),
+            })),
+        }));
     }
 
     #[test]
