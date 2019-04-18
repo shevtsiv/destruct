@@ -1,4 +1,5 @@
 use std::rc::Rc;
+use std::fmt::Debug;
 
 #[derive(PartialOrd, PartialEq, Debug)]
 pub struct LinkedListNode<T: PartialEq> {
@@ -19,8 +20,8 @@ impl<T: PartialEq> LinkedListNode<T> {
         &mut self.data
     }
 
-    pub fn get_next(&self) -> &Option<Rc<LinkedListNode<T>>> {
-        &self.next_node
+    pub fn get_next(&self) -> Option<&Rc<LinkedListNode<T>>> {
+        self.next_node.as_ref()
     }
 
     pub fn get_next_mut(&mut self) -> Option<&mut Rc<LinkedListNode<T>>> {
@@ -113,10 +114,14 @@ impl<T: PartialEq> LinkedList<T> {
         self.head = Some(Rc::from(new_head));
     }
 
-    pub fn add_after(&mut self, value: T, after: &T) {
-        let after_node = self.find_mut(after).unwrap();
-        let next_node = after_node.get_next().to_owned();
-        after_node.set_next(LinkedListNode { data: value, next_node });
+    pub fn add_after(&mut self, value: T, after: &T) where T: Debug {
+        let after_node = self.find_mut(after)
+            .expect(format!("Cannot find LinkedListNode with value: {:?}", after).as_str());
+        if let Some(next) = after_node.get_next() {
+            after_node.set_next(LinkedListNode { data: value, next_node: Some(next.to_owned()) });
+        } else {
+            after_node.set_next(LinkedListNode { data: value, next_node: None });
+        }
     }
 
     pub fn find(&self, value: &T) -> Option<&Rc<LinkedListNode<T>>> {
@@ -295,10 +300,10 @@ mod tests {
             }))
         };
         assert_eq!(deep_tail.find(&1).unwrap(), deep_tail.get_head().unwrap());
-        assert_eq!(deep_tail.find(&2).unwrap().get_next().as_ref().unwrap().get_data(), &3);
-        assert_eq!(deep_tail.find(&3).unwrap().get_next().as_ref().unwrap().get_data(), &4);
-        assert_eq!(deep_tail.find(&4).unwrap().get_next().as_ref().unwrap().get_data(), &5);
-        assert_eq!(deep_tail.find(&5).unwrap().get_next(), &None);
+        assert_eq!(deep_tail.find(&2).unwrap().get_next().unwrap().get_data(), &3);
+        assert_eq!(deep_tail.find(&3).unwrap().get_next().unwrap().get_data(), &4);
+        assert_eq!(deep_tail.find(&4).unwrap().get_next().unwrap().get_data(), &5);
+        assert_eq!(deep_tail.find(&5).unwrap().get_next(), None);
         assert_eq!(deep_tail.find(&6), None);
     }
 }
