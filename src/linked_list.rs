@@ -120,22 +120,15 @@ impl<T: PartialEq> LinkedList<T> {
     }
 
     pub fn find(&self, value: &T) -> Option<&Rc<LinkedListNode<T>>> {
-        if let Some(head) = &self.head {
-            if &head.data == value {
-                return Some(head);
-            }
-            let mut tail = head.next_node.as_ref();
-            if tail.is_none() {
-                return None;
-            }
+        if let Some(mut node) = self.head.as_ref() {
             loop {
-                if tail.is_none() {
-                    return None;
+                if &node.data == value {
+                    return Some(node);
+                }
+                if let Some(next) = &node.next_node {
+                    node = next;
                 } else {
-                    if &tail.unwrap().data == value {
-                        return tail;
-                    }
-                    tail = tail.unwrap().next_node.as_ref();
+                    return None;
                 }
             }
         } else {
@@ -144,18 +137,16 @@ impl<T: PartialEq> LinkedList<T> {
     }
 
     pub fn find_mut(&mut self, value: &T) -> Option<&mut LinkedListNode<T>> {
-        if self.head.is_some() {
-            if &self.head.as_ref().unwrap().data == value {
-                return Some(Rc::get_mut(self.head.as_mut().unwrap()).unwrap());
-            }
-            let mut tail = Rc::get_mut(self.head.as_mut().unwrap()).unwrap();
+        if let Some(head) = self.head.as_mut() {
+            let mut node = Rc::get_mut(head).unwrap();
             loop {
-                if &tail.data == value {
-                    return Some(tail);
-                } else if tail.next_node.is_none() {
-                    return None;
+                if &node.data == value {
+                    return Some(node);
+                }
+                if let Some(next) = node.next_node.as_mut() {
+                    node = Rc::get_mut(next).unwrap();
                 } else {
-                    tail = Rc::get_mut(tail.next_node.as_mut().unwrap()).unwrap();
+                    return None;
                 }
             }
         } else {
