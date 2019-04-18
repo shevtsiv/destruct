@@ -48,22 +48,12 @@ impl<T: PartialEq> LinkedList<T> {
 
     pub fn get_tail(&self) -> Option<&Rc<LinkedListNode<T>>> {
         // Empty LinkedList has no head
-        if let Some(head) = &self.head {
-            // Starting from the second node
-            let mut tail = head.next_node.as_ref();
-            // If head is a tail (LinkedList with only element)
-            if tail.is_none() {
-                return Some(head);
+        if let Some(mut head) = self.head.as_ref() {
+            // Loop until the last node is found
+            while let Some(next) = head.next_node.as_ref() {
+                head = next;
             }
-            loop { // Loop until the last node is found
-                if tail.unwrap().next_node.is_none() {
-                    // It is the last node in the list
-                    return tail;
-                } else {
-                    // Move on to the next node
-                    tail = tail.unwrap().next_node.as_ref();
-                }
-            }
+            return Some(head);
         } else {
             return None;
         }
