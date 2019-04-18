@@ -99,9 +99,14 @@ impl<T: PartialEq> LinkedList<T> {
     }
 
     pub fn add_first(&mut self, value: T) {
-        let old_head = self.head.as_ref().unwrap().to_owned();
-        let new_head = LinkedListNode { data: value, next_node: Some(old_head) };
-        self.head = Some(Rc::from(new_head));
+        if let Some(head) = self.head.as_ref() {
+            let old_head = head.to_owned();
+            let new_head = LinkedListNode { data: value, next_node: Some(old_head) };
+            self.head = Some(Rc::from(new_head));
+        } else {
+            let new_head = LinkedListNode { data: value, next_node: None };
+            self.head = Some(Rc::from(new_head));
+        }
     }
 
     pub fn add_after(&mut self, value: T, after: &T) where T: Debug {
