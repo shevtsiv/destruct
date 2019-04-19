@@ -153,6 +153,27 @@ impl<T: PartialEq> LinkedList<T> {
             return None;
         }
     }
+
+    pub fn find_match_mut<F>(&mut self, predicate: F) -> Option<&mut LinkedListNode<T>>
+        where
+            F: Fn(&LinkedListNode<T>) -> bool,
+    {
+        if let Some(head) = self.head.as_mut() {
+            let mut node = Rc::get_mut(head).unwrap();
+            loop {
+                if predicate(&node) {
+                    return Some(node);
+                }
+                if let Some(next) = node.next_node.as_mut() {
+                    node = Rc::get_mut(next).unwrap();
+                } else {
+                    return None;
+                }
+            }
+        } else {
+            return None;
+        }
+    }
 }
 
 #[cfg(test)]
@@ -300,5 +321,49 @@ mod tests {
         assert_eq!(deep_tail.find(&4).unwrap().get_next().unwrap().get_data(), &5);
         assert_eq!(deep_tail.find(&5).unwrap().get_next(), None);
         assert_eq!(deep_tail.find(&6), None);
+    }
+
+    #[test]
+    fn find_match_mut() {
+        let mut deep_list = LinkedList {
+            head: Some(Rc::from(LinkedListNode {
+                data: 1,
+                next_node: Some(Rc::from(LinkedListNode {
+                    data: 2,
+                    next_node: Some(Rc::from(LinkedListNode {
+                        data: 3,
+                        next_node: Some(Rc::from(LinkedListNode {
+                            data: 4,
+                            next_node: Some(Rc::from(LinkedListNode {
+                                data: 5,
+                                next_node: None,
+                            })),
+                        })),
+                    })),
+                })),
+            })),
+        };
+        assert_eq!(
+            deep_list
+                .find_match_mut(|node| node.has_next() && node.get_next().unwrap().get_data() == &3)
+                .unwrap(),
+            &mut LinkedListNode {
+                data: 2,
+                next_node: Some(Rc::from(LinkedListNode {
+                    data: 3,
+                    next_node: Some(Rc::from(LinkedListNode {
+                        data: 4,
+                        next_node: Some(Rc::from(LinkedListNode {
+                            data: 5,
+                            next_node: None,
+                        })),
+                    })),
+                })),
+            },
+        );
+        assert_eq!(
+            deep_list.find_match_mut(|node| node.get_data() == &5).unwrap(),
+            &mut LinkedListNode { data: 5, next_node: None, },
+        );
     }
 }
