@@ -28,8 +28,8 @@ impl<T: PartialEq> LinkedListNode<T> {
         self.next_node.as_mut()
     }
 
-    pub fn set_next(&mut self, next: LinkedListNode<T>) {
-        self.next_node = Some(Rc::from(next));
+    pub fn set_next(&mut self, next: Option<Rc<LinkedListNode<T>>>) {
+        self.next_node = next;
     }
 
     pub fn has_next(&self) -> bool {
@@ -90,7 +90,7 @@ impl<T: PartialEq> LinkedList<T> {
         let tail = self.get_tail_mut();
         match tail {
             Some(tail) => {
-                tail.set_next(LinkedListNode { data: value, next_node: None });
+                tail.set_next(Some(Rc::from(LinkedListNode { data: value, next_node: None })));
             }
             None => {
                 self.head = Some(Rc::from(LinkedListNode { data: value, next_node: None }))
@@ -113,9 +113,9 @@ impl<T: PartialEq> LinkedList<T> {
         let after_node = self.find_mut(after)
             .expect(format!("Cannot find LinkedListNode with value: {:?}", after).as_str());
         if let Some(next) = after_node.get_next() {
-            after_node.set_next(LinkedListNode { data: value, next_node: Some(next.to_owned()) });
+            after_node.set_next(Some(Rc::from(LinkedListNode { data: value, next_node: Some(next.to_owned()) })));
         } else {
-            after_node.set_next(LinkedListNode { data: value, next_node: None });
+            after_node.set_next(Some(Rc::from(LinkedListNode { data: value, next_node: None })));
         }
     }
 
