@@ -1,5 +1,5 @@
-use std::rc::Rc;
 use std::fmt::Debug;
+use std::rc::Rc;
 
 #[derive(PartialOrd, PartialEq, Debug)]
 pub struct LinkedListNode<T: PartialEq> {
@@ -68,7 +68,8 @@ impl<T: PartialEq> LinkedList<T> {
                 return Some(Rc::get_mut(self.head.as_mut().unwrap()).unwrap());
             }
             let mut tail = Rc::get_mut(self.head.as_mut().unwrap()).unwrap();
-            loop { // Loop until the last node is found
+            loop {
+                // Loop until the last node is found
                 if tail.next_node.is_none() {
                     // It is the last node in the list
                     return Some(tail);
@@ -90,10 +91,16 @@ impl<T: PartialEq> LinkedList<T> {
         let tail = self.get_tail_mut();
         match tail {
             Some(tail) => {
-                tail.set_next(Some(Rc::from(LinkedListNode { data: value, next_node: None })));
+                tail.set_next(Some(Rc::from(LinkedListNode {
+                    data: value,
+                    next_node: None,
+                })));
             }
             None => {
-                self.head = Some(Rc::from(LinkedListNode { data: value, next_node: None }))
+                self.head = Some(Rc::from(LinkedListNode {
+                    data: value,
+                    next_node: None,
+                }))
             }
         }
     }
@@ -101,21 +108,37 @@ impl<T: PartialEq> LinkedList<T> {
     pub fn add_first(&mut self, value: T) {
         if let Some(head) = self.head.as_ref() {
             let old_head = head.to_owned();
-            let new_head = LinkedListNode { data: value, next_node: Some(old_head) };
+            let new_head = LinkedListNode {
+                data: value,
+                next_node: Some(old_head),
+            };
             self.head = Some(Rc::from(new_head));
         } else {
-            let new_head = LinkedListNode { data: value, next_node: None };
+            let new_head = LinkedListNode {
+                data: value,
+                next_node: None,
+            };
             self.head = Some(Rc::from(new_head));
         }
     }
 
-    pub fn add_after(&mut self, value: T, after: &T) where T: Debug {
-        let after_node = self.find_mut(after)
+    pub fn add_after(&mut self, value: T, after: &T)
+    where
+        T: Debug,
+    {
+        let after_node = self
+            .find_mut(after)
             .expect(format!("Cannot find LinkedListNode with value: {:?}", after).as_str());
         if let Some(next) = after_node.get_next() {
-            after_node.set_next(Some(Rc::from(LinkedListNode { data: value, next_node: Some(next.to_owned()) })));
+            after_node.set_next(Some(Rc::from(LinkedListNode {
+                data: value,
+                next_node: Some(next.to_owned()),
+            })));
         } else {
-            after_node.set_next(Some(Rc::from(LinkedListNode { data: value, next_node: None })));
+            after_node.set_next(Some(Rc::from(LinkedListNode {
+                data: value,
+                next_node: None,
+            })));
         }
     }
 
@@ -155,8 +178,8 @@ impl<T: PartialEq> LinkedList<T> {
     }
 
     pub fn find_match_mut<F>(&mut self, predicate: F) -> Option<&mut LinkedListNode<T>>
-        where
-            F: Fn(&LinkedListNode<T>) -> bool,
+    where
+        F: Fn(&LinkedListNode<T>) -> bool,
     {
         if let Some(head) = self.head.as_mut() {
             let mut node = Rc::get_mut(head).unwrap();
@@ -178,8 +201,8 @@ impl<T: PartialEq> LinkedList<T> {
 
 #[cfg(test)]
 mod tests {
-    use std::rc::Rc;
     use crate::linked_list::{LinkedList, LinkedListNode};
+    use std::rc::Rc;
 
     #[test]
     fn new() {
@@ -197,11 +220,14 @@ mod tests {
                     data: 2,
                     next_node: None,
                 })),
-            }))
+            })),
         };
         assert_eq!(has_tail.get_tail().unwrap().get_data(), &2);
         let head_only = LinkedList {
-            head: Some(Rc::from(LinkedListNode { data: 1, next_node: None }))
+            head: Some(Rc::from(LinkedListNode {
+                data: 1,
+                next_node: None,
+            })),
         };
         assert_eq!(head_only.get_tail().unwrap().get_data(), &1);
         let deep_tail = LinkedList {
@@ -220,7 +246,7 @@ mod tests {
                         })),
                     })),
                 })),
-            }))
+            })),
         };
         assert_eq!(deep_tail.get_tail().unwrap().get_data(), &5);
     }
@@ -263,36 +289,42 @@ mod tests {
         list.add(2);
         list.add(3);
         list.add(4);
-        assert_eq!(list.find(&1).unwrap().to_owned(), Rc::from(LinkedListNode {
-            data: 1,
-            next_node: Some(Rc::from(LinkedListNode {
-                data: 2,
+        assert_eq!(
+            list.find(&1).unwrap().to_owned(),
+            Rc::from(LinkedListNode {
+                data: 1,
                 next_node: Some(Rc::from(LinkedListNode {
-                    data: 3,
+                    data: 2,
                     next_node: Some(Rc::from(LinkedListNode {
-                        data: 4,
-                        next_node: None,
-                    })),
-                })),
-            })),
-        }));
-        list.add_after(5, &3);
-        assert_eq!(list.find(&1).unwrap().to_owned(), Rc::from(LinkedListNode {
-            data: 1,
-            next_node: Some(Rc::from(LinkedListNode {
-                data: 2,
-                next_node: Some(Rc::from(LinkedListNode {
-                    data: 3,
-                    next_node: Some(Rc::from(LinkedListNode {
-                        data: 5,
+                        data: 3,
                         next_node: Some(Rc::from(LinkedListNode {
                             data: 4,
                             next_node: None,
                         })),
                     })),
                 })),
-            })),
-        }));
+            })
+        );
+        list.add_after(5, &3);
+        assert_eq!(
+            list.find(&1).unwrap().to_owned(),
+            Rc::from(LinkedListNode {
+                data: 1,
+                next_node: Some(Rc::from(LinkedListNode {
+                    data: 2,
+                    next_node: Some(Rc::from(LinkedListNode {
+                        data: 3,
+                        next_node: Some(Rc::from(LinkedListNode {
+                            data: 5,
+                            next_node: Some(Rc::from(LinkedListNode {
+                                data: 4,
+                                next_node: None,
+                            })),
+                        })),
+                    })),
+                })),
+            })
+        );
     }
 
     #[test]
@@ -313,12 +345,21 @@ mod tests {
                         })),
                     })),
                 })),
-            }))
+            })),
         };
         assert_eq!(deep_tail.find(&1).unwrap(), deep_tail.get_head().unwrap());
-        assert_eq!(deep_tail.find(&2).unwrap().get_next().unwrap().get_data(), &3);
-        assert_eq!(deep_tail.find(&3).unwrap().get_next().unwrap().get_data(), &4);
-        assert_eq!(deep_tail.find(&4).unwrap().get_next().unwrap().get_data(), &5);
+        assert_eq!(
+            deep_tail.find(&2).unwrap().get_next().unwrap().get_data(),
+            &3
+        );
+        assert_eq!(
+            deep_tail.find(&3).unwrap().get_next().unwrap().get_data(),
+            &4
+        );
+        assert_eq!(
+            deep_tail.find(&4).unwrap().get_next().unwrap().get_data(),
+            &5
+        );
         assert_eq!(deep_tail.find(&5).unwrap().get_next(), None);
         assert_eq!(deep_tail.find(&6), None);
     }
@@ -362,8 +403,13 @@ mod tests {
             },
         );
         assert_eq!(
-            deep_list.find_match_mut(|node| node.get_data() == &5).unwrap(),
-            &mut LinkedListNode { data: 5, next_node: None, },
+            deep_list
+                .find_match_mut(|node| node.get_data() == &5)
+                .unwrap(),
+            &mut LinkedListNode {
+                data: 5,
+                next_node: None,
+            },
         );
     }
 }

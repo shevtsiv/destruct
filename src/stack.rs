@@ -40,7 +40,9 @@ impl<T> VectorBasedDataStructure<T> for Stack<T> {
     }
 
     fn with_capacity(capacity: usize) -> Self {
-        Stack { entry: Vec::with_capacity(capacity) }
+        Stack {
+            entry: Vec::with_capacity(capacity),
+        }
     }
 
     fn len(&self) -> usize {
@@ -54,8 +56,8 @@ impl<T> VectorBasedDataStructure<T> for Stack<T> {
 
 #[cfg(test)]
 mod tests {
-    use crate::vector_based::VectorBasedDataStructure;
     use crate::stack::Stack;
+    use crate::vector_based::VectorBasedDataStructure;
 
     #[test]
     fn push() {

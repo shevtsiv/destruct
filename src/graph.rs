@@ -26,12 +26,19 @@ impl<'a, T: PartialEq> GraphNode<'a, T> {
     }
 
     pub fn remove_line(&mut self, node: &'a GraphNode<T>) {
-        let index = self.lines.iter().position(|node_to_delete| node_to_delete == &node).unwrap();
+        let index = self
+            .lines
+            .iter()
+            .position(|node_to_delete| node_to_delete == &node)
+            .unwrap();
         self.lines.remove(index);
     }
 
     pub fn new(value: T) -> Self {
-        GraphNode { value, lines: Vec::new() }
+        GraphNode {
+            value,
+            lines: Vec::new(),
+        }
     }
 
     pub fn new_with_lines(value: T, lines: Vec<&'a GraphNode<T>>) -> Self {
@@ -49,7 +56,9 @@ impl<'a, T: PartialEq> VectorBasedDataStructure<T> for Graph<'a, T> {
     }
 
     fn with_capacity(capacity: usize) -> Self {
-        Graph { nodes: Vec::with_capacity(capacity) }
+        Graph {
+            nodes: Vec::with_capacity(capacity),
+        }
     }
 
     fn len(&self) -> usize {
@@ -63,8 +72,8 @@ impl<'a, T: PartialEq> VectorBasedDataStructure<T> for Graph<'a, T> {
 
 #[cfg(test)]
 mod tests {
-    use crate::vector_based::VectorBasedDataStructure;
     use crate::graph::Graph;
+    use crate::vector_based::VectorBasedDataStructure;
 
     #[test]
     fn new() {
@@ -97,7 +106,10 @@ mod tests {
         let third_node = GraphNode::new(3);
         let lines = vec![&first_node, &second_node, &third_node];
         let graph_node = GraphNode::new_with_lines(0, lines);
-        assert_eq!(graph_node.get_lines(), &vec![&GraphNode::new(1), &GraphNode::new(2), &GraphNode::new(3)]);
+        assert_eq!(
+            graph_node.get_lines(),
+            &vec![&GraphNode::new(1), &GraphNode::new(2), &GraphNode::new(3)]
+        );
     }
 
     #[test]
@@ -116,9 +128,15 @@ mod tests {
         let third_node = GraphNode::new(3);
         let lines = vec![&first_node, &second_node, &third_node];
         let mut graph_node = GraphNode::new_with_lines(0, lines);
-        assert_eq!(graph_node.get_lines(), &vec![&GraphNode::new(1), &GraphNode::new(2), &GraphNode::new(3)]);
+        assert_eq!(
+            graph_node.get_lines(),
+            &vec![&GraphNode::new(1), &GraphNode::new(2), &GraphNode::new(3)]
+        );
         graph_node.remove_line(&second_node);
-        assert_eq!(graph_node.get_lines(), &vec![&GraphNode::new(1), &GraphNode::new(3)]);
+        assert_eq!(
+            graph_node.get_lines(),
+            &vec![&GraphNode::new(1), &GraphNode::new(3)]
+        );
         graph_node.remove_line(&third_node);
         assert_eq!(graph_node.get_lines(), &vec![&GraphNode::new(1)]);
         graph_node.remove_line(&first_node);

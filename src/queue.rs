@@ -33,7 +33,9 @@ impl<T> VectorBasedDataStructure<T> for Queue<T> {
     }
 
     fn with_capacity(capacity: usize) -> Self {
-        Queue { entry: Vec::with_capacity(capacity) }
+        Queue {
+            entry: Vec::with_capacity(capacity),
+        }
     }
 
     fn len(&self) -> usize {
@@ -47,8 +49,8 @@ impl<T> VectorBasedDataStructure<T> for Queue<T> {
 
 #[cfg(test)]
 mod tests {
-    use crate::vector_based::VectorBasedDataStructure;
     use crate::queue::Queue;
+    use crate::vector_based::VectorBasedDataStructure;
 
     #[test]
     fn enqueue() {
