@@ -61,23 +61,13 @@ impl<T: PartialEq> LinkedList<T> {
 
     // Is this return value correct?
     pub fn get_tail_mut(&mut self) -> Option<&mut LinkedListNode<T>> {
-        // Empty LinkedList has no head
-        if self.head.is_some() {
-            // If head is a tail (LinkedList with only element)
-            if self.head.as_ref().unwrap().next_node.is_none() {
-                return Some(Rc::get_mut(self.head.as_mut().unwrap()).unwrap());
+        if let Some(head) = self.head.as_mut() {
+            let mut tail = Rc::get_mut(head).unwrap();
+            while tail.next_node.is_some() {
+                let next = tail.next_node.as_mut().unwrap();
+                tail = Rc::get_mut(next).unwrap();
             }
-            let mut tail = Rc::get_mut(self.head.as_mut().unwrap()).unwrap();
-            loop {
-                // Loop until the last node is found
-                if tail.next_node.is_none() {
-                    // It is the last node in the list
-                    return Some(tail);
-                } else {
-                    // Move on to the next node
-                    tail = Rc::get_mut(tail.next_node.as_mut().unwrap()).unwrap();
-                }
-            }
+            return Some(tail);
         } else {
             return None;
         }
