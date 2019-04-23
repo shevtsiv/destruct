@@ -206,6 +206,28 @@ impl<T: PartialEq> LinkedList<T> {
             }
         }
     }
+
+    pub fn delete_match<F>(&mut self, predicate: F)
+    where
+        F: Fn(&LinkedListNode<T>) -> bool,
+    {
+        let prev = self.find_match_mut(|node| -> bool {
+            node.next_node.is_some() && predicate(node.next_node.as_ref().unwrap())
+        });
+        if let Some(prev) = prev {
+            if let Some(next) = prev.next_node.as_ref().unwrap().next_node.as_ref() {
+                prev.set_next(Some(next.to_owned()));
+            } else {
+                prev.set_next(None);
+            }
+        } else if let Some(match_node) = self.find_match_mut(predicate) {
+            if let Some(next) = match_node.next_node.as_ref() {
+                self.head = Some(next.to_owned());
+            } else {
+                self.head = None;
+            }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -483,6 +505,87 @@ mod tests {
             }))
         );
         deep_list.delete(&4);
+        assert_eq!(deep_list.get_head(), None);
+    }
+
+    #[test]
+    fn delete_match() {
+        let mut deep_list = LinkedList {
+            head: Some(Rc::from(LinkedListNode {
+                data: 1,
+                next_node: Some(Rc::from(LinkedListNode {
+                    data: 2,
+                    next_node: Some(Rc::from(LinkedListNode {
+                        data: 3,
+                        next_node: Some(Rc::from(LinkedListNode {
+                            data: 4,
+                            next_node: Some(Rc::from(LinkedListNode {
+                                data: 5,
+                                next_node: None,
+                            })),
+                        })),
+                    })),
+                })),
+            })),
+        };
+        deep_list.delete_match(|node| node.get_data() == &3);
+        assert_eq!(
+            deep_list.get_head(),
+            Some(&Rc::from(LinkedListNode {
+                data: 1,
+                next_node: Some(Rc::from(LinkedListNode {
+                    data: 2,
+                    next_node: Some(Rc::from(LinkedListNode {
+                        data: 4,
+                        next_node: Some(Rc::from(LinkedListNode {
+                            data: 5,
+                            next_node: None,
+                        })),
+                    })),
+                })),
+            }))
+        );
+        deep_list.delete_match(|node| {
+            if let Some(next) = node.get_next() {
+                if next.get_data() == &2 {
+                    return true;
+                }
+            }
+            return false;
+        });
+        assert_eq!(
+            deep_list.get_head(),
+            Some(&Rc::from(LinkedListNode {
+                data: 2,
+                next_node: Some(Rc::from(LinkedListNode {
+                    data: 4,
+                    next_node: Some(Rc::from(LinkedListNode {
+                        data: 5,
+                        next_node: None,
+                    })),
+                })),
+            }))
+        );
+        deep_list.delete_match(|node| node.get_next().is_none());
+        assert_eq!(
+            deep_list.get_head(),
+            Some(&Rc::from(LinkedListNode {
+                data: 2,
+                next_node: Some(Rc::from(LinkedListNode {
+                    data: 4,
+                    next_node: None,
+                })),
+            }))
+        );
+        deep_list.delete_match(|node| node.get_data() == &2);
+        assert_eq!(
+            deep_list.get_head(),
+            Some(&Rc::from(LinkedListNode {
+                data: 4,
+                next_node: None,
+            }))
+        );
+        deep_list.delete_match(|node| node.get_data() / 2 == 2);
         assert_eq!(deep_list.get_head(), None);
     }
 }
