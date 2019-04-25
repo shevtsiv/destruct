@@ -20,12 +20,12 @@ impl<T: PartialEq> LinkedListNode<T> {
         &mut self.data
     }
 
-    pub fn get_next(&self) -> Option<&Rc<LinkedListNode<T>>> {
-        self.next_node.as_ref()
+    pub fn get_next(&self) -> &Option<Rc<LinkedListNode<T>>> {
+        &self.next_node
     }
 
-    pub fn get_next_mut(&mut self) -> Option<&mut Rc<LinkedListNode<T>>> {
-        self.next_node.as_mut()
+    pub fn get_next_mut(&mut self) -> &Option<Rc<LinkedListNode<T>>> {
+        &self.next_node
     }
 
     pub fn set_next(&mut self, next: Option<Rc<LinkedListNode<T>>>) {
@@ -38,22 +38,23 @@ impl<T: PartialEq> LinkedListNode<T> {
 }
 
 impl<T: PartialEq> LinkedList<T> {
-    pub fn get_head(&self) -> Option<&Rc<LinkedListNode<T>>> {
-        self.head.as_ref()
+    pub fn get_head(&self) -> &Option<Rc<LinkedListNode<T>>> {
+        &self.head
     }
 
-    pub fn get_head_mut(&mut self) -> Option<&mut Rc<LinkedListNode<T>>> {
-        self.head.as_mut()
+    pub fn get_head_mut(&mut self) -> &Option<Rc<LinkedListNode<T>>> {
+        &self.head
     }
 
-    pub fn get_tail(&self) -> Option<&Rc<LinkedListNode<T>>> {
+    pub fn get_tail(&self) -> Option<Rc<LinkedListNode<T>>> {
         // Empty LinkedList has no head
-        if let Some(mut head) = self.head.as_ref() {
+        if let Some(ref head) = self.head {
+            let mut tail = head.to_owned();
             // Loop until the last node is found
-            while let Some(next) = head.next_node.as_ref() {
-                head = next;
+            while let Some(ref next) = tail.next_node {
+                tail = next.to_owned();
             }
-            return Some(head);
+            return Some(tail);
         } else {
             return None;
         }
@@ -132,14 +133,15 @@ impl<T: PartialEq> LinkedList<T> {
         }
     }
 
-    pub fn find(&self, value: &T) -> Option<&Rc<LinkedListNode<T>>> {
-        if let Some(mut node) = self.head.as_ref() {
+    pub fn find(&self, value: &T) -> Option<Rc<LinkedListNode<T>>> {
+        if let Some(ref node) = self.head {
+            let mut node = node.to_owned();
             loop {
                 if &node.data == value {
                     return Some(node);
                 }
-                if let Some(next) = &node.next_node {
-                    node = next;
+                if let Some(ref next) = node.next_node {
+                    node = next.to_owned();
                 } else {
                     return None;
                 }
@@ -300,16 +302,16 @@ mod tests {
         let mut list = LinkedList::new();
         list.add(1);
         list.add(2);
-        assert_eq!(list.get_head().unwrap().get_data(), &1);
+        assert_eq!(list.get_head().as_ref().unwrap().get_data(), &1);
         assert_eq!(list.get_tail().unwrap().get_data(), &2);
         list.add(3);
-        assert_eq!(list.get_head().unwrap().get_data(), &1);
+        assert_eq!(list.get_head().as_ref().unwrap().get_data(), &1);
         assert_eq!(list.get_tail().unwrap().get_data(), &3);
         list.add_first(0);
-        assert_eq!(list.get_head().unwrap().get_data(), &0);
+        assert_eq!(list.get_head().as_ref().unwrap().get_data(), &0);
         assert_eq!(list.get_tail().unwrap().get_data(), &3);
         list.add_first(15);
-        assert_eq!(list.get_head().unwrap().get_data(), &15);
+        assert_eq!(list.get_head().as_ref().unwrap().get_data(), &15);
         assert_eq!(list.get_tail().unwrap().get_data(), &3);
     }
 
@@ -378,20 +380,44 @@ mod tests {
                 })),
             })),
         };
-        assert_eq!(deep_tail.find(&1).unwrap(), deep_tail.get_head().unwrap());
         assert_eq!(
-            deep_tail.find(&2).unwrap().get_next().unwrap().get_data(),
+            deep_tail.find(&1).unwrap(),
+            deep_tail.get_head().as_ref().unwrap().to_owned()
+        );
+        assert_eq!(
+            deep_tail
+                .find(&2)
+                .unwrap()
+                .get_next()
+                .as_ref()
+                .unwrap()
+                .to_owned()
+                .get_data(),
             &3
         );
         assert_eq!(
-            deep_tail.find(&3).unwrap().get_next().unwrap().get_data(),
+            deep_tail
+                .find(&3)
+                .unwrap()
+                .get_next()
+                .as_ref()
+                .unwrap()
+                .to_owned()
+                .get_data(),
             &4
         );
         assert_eq!(
-            deep_tail.find(&4).unwrap().get_next().unwrap().get_data(),
+            deep_tail
+                .find(&4)
+                .unwrap()
+                .get_next()
+                .as_ref()
+                .unwrap()
+                .to_owned()
+                .get_data(),
             &5
         );
-        assert_eq!(deep_tail.find(&5).unwrap().get_next(), None);
+        assert_eq!(deep_tail.find(&5).unwrap().get_next(), &None);
         assert_eq!(deep_tail.find(&6), None);
     }
 
@@ -417,7 +443,8 @@ mod tests {
         };
         assert_eq!(
             deep_list
-                .find_match_mut(|node| node.has_next() && node.get_next().unwrap().get_data() == &3)
+                .find_match_mut(|node| node.has_next()
+                    && node.get_next().as_ref().unwrap().to_owned().get_data() == &3)
                 .unwrap(),
             &mut LinkedListNode {
                 data: 2,
@@ -467,7 +494,7 @@ mod tests {
         deep_list.delete(&3);
         assert_eq!(
             deep_list.get_head(),
-            Some(&Rc::from(LinkedListNode {
+            &Some(Rc::from(LinkedListNode {
                 data: 1,
                 next_node: Some(Rc::from(LinkedListNode {
                     data: 2,
@@ -484,7 +511,7 @@ mod tests {
         deep_list.delete(&1);
         assert_eq!(
             deep_list.get_head(),
-            Some(&Rc::from(LinkedListNode {
+            &Some(Rc::from(LinkedListNode {
                 data: 2,
                 next_node: Some(Rc::from(LinkedListNode {
                     data: 4,
@@ -499,13 +526,13 @@ mod tests {
         deep_list.delete(&2);
         assert_eq!(
             deep_list.get_head(),
-            Some(&Rc::from(LinkedListNode {
+            &Some(Rc::from(LinkedListNode {
                 data: 4,
                 next_node: None,
             }))
         );
         deep_list.delete(&4);
-        assert_eq!(deep_list.get_head(), None);
+        assert_eq!(deep_list.get_head(), &None);
     }
 
     #[test]
@@ -531,7 +558,7 @@ mod tests {
         deep_list.delete_match(|node| node.get_data() == &3);
         assert_eq!(
             deep_list.get_head(),
-            Some(&Rc::from(LinkedListNode {
+            &Some(Rc::from(LinkedListNode {
                 data: 1,
                 next_node: Some(Rc::from(LinkedListNode {
                     data: 2,
@@ -555,7 +582,7 @@ mod tests {
         });
         assert_eq!(
             deep_list.get_head(),
-            Some(&Rc::from(LinkedListNode {
+            &Some(Rc::from(LinkedListNode {
                 data: 2,
                 next_node: Some(Rc::from(LinkedListNode {
                     data: 4,
@@ -569,7 +596,7 @@ mod tests {
         deep_list.delete_match(|node| node.get_next().is_none());
         assert_eq!(
             deep_list.get_head(),
-            Some(&Rc::from(LinkedListNode {
+            &Some(Rc::from(LinkedListNode {
                 data: 2,
                 next_node: Some(Rc::from(LinkedListNode {
                     data: 4,
@@ -580,12 +607,12 @@ mod tests {
         deep_list.delete_match(|node| node.get_data() == &2);
         assert_eq!(
             deep_list.get_head(),
-            Some(&Rc::from(LinkedListNode {
+            &Some(Rc::from(LinkedListNode {
                 data: 4,
                 next_node: None,
             }))
         );
         deep_list.delete_match(|node| node.get_data() / 2 == 2);
-        assert_eq!(deep_list.get_head(), None);
+        assert_eq!(deep_list.get_head(), &None);
     }
 }
