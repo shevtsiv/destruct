@@ -178,6 +178,13 @@ impl<T: PartialEq> LinkedList<T> {
             self.head = self.head.take().unwrap().next_node;
         }
     }
+
+    pub fn pop(&mut self) -> Option<T> {
+        self.head.take().map(|head| {
+            self.head = head.next_node;
+            return head.data;
+        })
+    }
 }
 
 #[cfg(test)]
@@ -499,5 +506,33 @@ mod tests {
         );
         deep_list.delete_match(|node| node.get_data() / 2 == 2);
         assert_eq!(deep_list.get_head(), None);
+    }
+
+    #[test]
+    fn pop() {
+        let mut list = LinkedList {
+            head: Some(Box::from(LinkedListNode {
+                data: 1,
+                next_node: Some(Box::from(LinkedListNode {
+                    data: 2,
+                    next_node: Some(Box::from(LinkedListNode {
+                        data: 3,
+                        next_node: Some(Box::from(LinkedListNode {
+                            data: 4,
+                            next_node: Some(Box::from(LinkedListNode {
+                                data: 5,
+                                next_node: None,
+                            })),
+                        })),
+                    })),
+                })),
+            })),
+        };
+        assert_eq!(list.pop().unwrap(), 1);
+        assert_eq!(list.pop().unwrap(), 2);
+        assert_eq!(list.pop().unwrap(), 3);
+        assert_eq!(list.pop().unwrap(), 4);
+        assert_eq!(list.pop().unwrap(), 5);
+        assert_eq!(list.pop(), None);
     }
 }
