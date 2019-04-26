@@ -1,14 +1,13 @@
 use std::fmt::Debug;
-use std::rc::Rc;
 
 #[derive(PartialOrd, PartialEq, Debug)]
 pub struct LinkedListNode<T: PartialEq> {
     data: T,
-    next_node: Option<Rc<LinkedListNode<T>>>,
+    next_node: Option<Box<LinkedListNode<T>>>,
 }
 
 pub struct LinkedList<T: PartialEq> {
-    head: Option<Rc<LinkedListNode<T>>>,
+    head: Option<Box<LinkedListNode<T>>>,
 }
 
 impl<T: PartialEq> LinkedListNode<T> {
@@ -16,59 +15,45 @@ impl<T: PartialEq> LinkedListNode<T> {
         &self.data
     }
 
-    pub fn get_data_mut(&mut self) -> &mut T {
-        &mut self.data
-    }
-
-    pub fn get_next(&self) -> &Option<Rc<LinkedListNode<T>>> {
-        &self.next_node
-    }
-
-    pub fn get_next_mut(&mut self) -> &Option<Rc<LinkedListNode<T>>> {
-        &self.next_node
-    }
-
-    pub fn set_next(&mut self, next: Option<Rc<LinkedListNode<T>>>) {
-        self.next_node = next;
-    }
-
-    pub fn has_next(&self) -> bool {
-        self.next_node.is_some()
+    pub fn get_next(&self) -> Option<&T> {
+        if let Some(ref next) = self.next_node {
+            return Some(next.get_data());
+        } else {
+            return None;
+        }
     }
 }
 
 impl<T: PartialEq> LinkedList<T> {
-    pub fn get_head(&self) -> &Option<Rc<LinkedListNode<T>>> {
-        &self.head
+    pub fn get_head(&self) -> Option<&T> {
+        self.head.as_ref().map(|node| &node.data)
     }
 
-    pub fn get_head_mut(&mut self) -> &Option<Rc<LinkedListNode<T>>> {
-        &self.head
+    pub fn get_head_mut(&mut self) -> Option<&mut T> {
+        self.head.as_mut().map(|node| &mut node.data)
     }
 
-    pub fn get_tail(&self) -> Option<Rc<LinkedListNode<T>>> {
+    pub fn get_tail(&self) -> Option<&T> {
         // Empty LinkedList has no head
         if let Some(ref head) = self.head {
-            let mut tail = head.to_owned();
+            let mut tail = head;
             // Loop until the last node is found
             while let Some(ref next) = tail.next_node {
-                tail = next.to_owned();
+                tail = next;
             }
-            return Some(tail);
+            return Some(&tail.data);
         } else {
             return None;
         }
     }
 
-    // Is this return value correct?
-    pub fn get_tail_mut(&mut self) -> Option<&mut LinkedListNode<T>> {
-        if let Some(head) = self.head.as_mut() {
-            let mut tail = Rc::get_mut(head).unwrap();
+    pub fn get_tail_mut(&mut self) -> Option<&mut T> {
+        if let Some(ref mut head) = self.head {
+            let mut tail = head;
             while tail.next_node.is_some() {
-                let next = tail.next_node.as_mut().unwrap();
-                tail = Rc::get_mut(next).unwrap();
+                tail = tail.next_node.as_mut().unwrap();
             }
-            return Some(tail);
+            return Some(&mut tail.data);
         } else {
             return None;
         }
@@ -79,38 +64,28 @@ impl<T: PartialEq> LinkedList<T> {
     }
 
     pub fn add(&mut self, value: T) {
-        let tail = self.get_tail_mut();
-        match tail {
-            Some(tail) => {
-                tail.set_next(Some(Rc::from(LinkedListNode {
-                    data: value,
-                    next_node: None,
-                })));
+        if let Some(head) = self.head.as_mut() {
+            let mut tail = head;
+            while let Some(ref mut next) = tail.next_node {
+                tail = next;
             }
-            None => {
-                self.head = Some(Rc::from(LinkedListNode {
-                    data: value,
-                    next_node: None,
-                }))
-            }
+            tail.next_node = Some(Box::from(LinkedListNode {
+                data: value,
+                next_node: None,
+            }));
+        } else {
+            self.head = Some(Box::from(LinkedListNode {
+                data: value,
+                next_node: None,
+            }))
         }
     }
 
     pub fn add_first(&mut self, value: T) {
-        if let Some(head) = self.head.as_ref() {
-            let old_head = head.to_owned();
-            let new_head = LinkedListNode {
-                data: value,
-                next_node: Some(old_head),
-            };
-            self.head = Some(Rc::from(new_head));
-        } else {
-            let new_head = LinkedListNode {
-                data: value,
-                next_node: None,
-            };
-            self.head = Some(Rc::from(new_head));
-        }
+        self.head = Some(Box::from(LinkedListNode {
+            data: value,
+            next_node: self.head.take(),
+        }));
     }
 
     pub fn add_after(&mut self, value: T, after: &T)
@@ -120,67 +95,40 @@ impl<T: PartialEq> LinkedList<T> {
         let after_node = self
             .find_mut(after)
             .expect(format!("Cannot find LinkedListNode with value: {:?}", after).as_str());
-        if let Some(next) = after_node.get_next() {
-            after_node.set_next(Some(Rc::from(LinkedListNode {
-                data: value,
-                next_node: Some(next.to_owned()),
-            })));
-        } else {
-            after_node.set_next(Some(Rc::from(LinkedListNode {
-                data: value,
-                next_node: None,
-            })));
-        }
+        after_node.next_node = Some(Box::from(LinkedListNode {
+            data: value,
+            next_node: after_node.next_node.take(),
+        }));
     }
 
-    pub fn find(&self, value: &T) -> Option<Rc<LinkedListNode<T>>> {
-        if let Some(ref node) = self.head {
-            let mut node = node.to_owned();
-            loop {
-                if &node.data == value {
-                    return Some(node);
-                }
-                if let Some(ref next) = node.next_node {
-                    node = next.to_owned();
+    fn find_mut(&mut self, value: &T) -> Option<&mut LinkedListNode<T>> {
+        if let Some(ref mut head) = self.head {
+            let mut node = head;
+            while &node.data != value {
+                if let Some(ref mut next) = node.next_node {
+                    node = next;
                 } else {
                     return None;
                 }
             }
+            return Some(node);
         } else {
             return None;
         }
     }
-
-    pub fn find_mut(&mut self, value: &T) -> Option<&mut LinkedListNode<T>> {
-        if let Some(head) = self.head.as_mut() {
-            let mut node = Rc::get_mut(head).unwrap();
-            loop {
-                if &node.data == value {
-                    return Some(node);
-                }
-                if let Some(next) = node.next_node.as_mut() {
-                    node = Rc::get_mut(next).unwrap();
-                } else {
-                    return None;
-                }
-            }
-        } else {
-            return None;
-        }
-    }
-
-    pub fn find_match_mut<F>(&mut self, predicate: F) -> Option<&mut LinkedListNode<T>>
+    //
+    fn find_match_mut<F>(&mut self, predicate: &F) -> Option<&mut LinkedListNode<T>>
     where
         F: Fn(&LinkedListNode<T>) -> bool,
     {
-        if let Some(head) = self.head.as_mut() {
-            let mut node = Rc::get_mut(head).unwrap();
+        if let Some(ref mut head) = self.head {
+            let mut node = head;
             loop {
                 if predicate(&node) {
                     return Some(node);
                 }
-                if let Some(next) = node.next_node.as_mut() {
-                    node = Rc::get_mut(next).unwrap();
+                if let Some(ref mut next) = node.next_node {
+                    node = next;
                 } else {
                     return None;
                 }
@@ -191,21 +139,21 @@ impl<T: PartialEq> LinkedList<T> {
     }
 
     pub fn delete(&mut self, value: &T) {
-        let prev = self.find_match_mut(|node| -> bool {
-            node.next_node.is_some() && node.next_node.as_ref().unwrap().get_data() == value
+        if self.find_mut(value).is_none() {
+            return;
+        }
+        let prev = self.find_match_mut(&|node| {
+            if let Some(ref next) = node.next_node {
+                if &next.data == value {
+                    return true;
+                }
+            }
+            false
         });
         if let Some(prev) = prev {
-            if let Some(next) = prev.next_node.as_ref().unwrap().next_node.as_ref() {
-                prev.set_next(Some(next.to_owned()));
-            } else {
-                prev.set_next(None);
-            }
-        } else if self.find(value).is_some() {
-            if let Some(next) = self.find(value).unwrap().next_node.as_ref() {
-                self.head = Some(next.to_owned());
-            } else {
-                self.head = None;
-            }
+            prev.next_node = prev.next_node.take().unwrap().next_node;
+        } else {
+            self.head = self.head.take().unwrap().next_node;
         }
     }
 
@@ -213,21 +161,21 @@ impl<T: PartialEq> LinkedList<T> {
     where
         F: Fn(&LinkedListNode<T>) -> bool,
     {
-        let prev = self.find_match_mut(|node| -> bool {
-            node.next_node.is_some() && predicate(node.next_node.as_ref().unwrap())
+        if self.find_match_mut(&predicate).is_none() {
+            return;
+        }
+        let prev = self.find_match_mut(&|node| {
+            if let Some(ref next) = node.next_node {
+                if predicate(next) {
+                    return true;
+                }
+            }
+            false
         });
         if let Some(prev) = prev {
-            if let Some(next) = prev.next_node.as_ref().unwrap().next_node.as_ref() {
-                prev.set_next(Some(next.to_owned()));
-            } else {
-                prev.set_next(None);
-            }
-        } else if let Some(match_node) = self.find_match_mut(predicate) {
-            if let Some(next) = match_node.next_node.as_ref() {
-                self.head = Some(next.to_owned());
-            } else {
-                self.head = None;
-            }
+            prev.next_node = prev.next_node.take().unwrap().next_node;
+        } else {
+            self.head = self.head.take().unwrap().next_node;
         }
     }
 }
@@ -235,7 +183,6 @@ impl<T: PartialEq> LinkedList<T> {
 #[cfg(test)]
 mod tests {
     use crate::linked_list::{LinkedList, LinkedListNode};
-    use std::rc::Rc;
 
     #[test]
     fn new() {
@@ -247,32 +194,32 @@ mod tests {
         let empty: LinkedList<i32> = LinkedList::new();
         assert_eq!(empty.get_tail(), None);
         let has_tail = LinkedList {
-            head: Some(Rc::from(LinkedListNode {
+            head: Some(Box::from(LinkedListNode {
                 data: 1,
-                next_node: Some(Rc::from(LinkedListNode {
+                next_node: Some(Box::from(LinkedListNode {
                     data: 2,
                     next_node: None,
                 })),
             })),
         };
-        assert_eq!(has_tail.get_tail().unwrap().get_data(), &2);
+        assert_eq!(has_tail.get_tail().unwrap(), &2);
         let head_only = LinkedList {
-            head: Some(Rc::from(LinkedListNode {
+            head: Some(Box::from(LinkedListNode {
                 data: 1,
                 next_node: None,
             })),
         };
-        assert_eq!(head_only.get_tail().unwrap().get_data(), &1);
+        assert_eq!(head_only.get_tail().unwrap(), &1);
         let deep_tail = LinkedList {
-            head: Some(Rc::from(LinkedListNode {
+            head: Some(Box::from(LinkedListNode {
                 data: 1,
-                next_node: Some(Rc::from(LinkedListNode {
+                next_node: Some(Box::from(LinkedListNode {
                     data: 2,
-                    next_node: Some(Rc::from(LinkedListNode {
+                    next_node: Some(Box::from(LinkedListNode {
                         data: 3,
-                        next_node: Some(Rc::from(LinkedListNode {
+                        next_node: Some(Box::from(LinkedListNode {
                             data: 4,
-                            next_node: Some(Rc::from(LinkedListNode {
+                            next_node: Some(Box::from(LinkedListNode {
                                 data: 5,
                                 next_node: None,
                             })),
@@ -281,20 +228,20 @@ mod tests {
                 })),
             })),
         };
-        assert_eq!(deep_tail.get_tail().unwrap().get_data(), &5);
+        assert_eq!(deep_tail.get_tail().unwrap(), &5);
     }
 
     #[test]
     fn add() {
         let mut list = LinkedList::new();
         list.add(1);
-        assert_eq!(list.get_tail().unwrap().get_data(), &1);
+        assert_eq!(list.get_tail().unwrap(), &1);
         list.add(2);
-        assert_eq!(list.get_tail().unwrap().get_data(), &2);
+        assert_eq!(list.get_tail().unwrap(), &2);
         list.add(3);
-        assert_eq!(list.get_tail().unwrap().get_data(), &3);
+        assert_eq!(list.get_tail().unwrap(), &3);
         list.add(9);
-        assert_eq!(list.get_tail().unwrap().get_data(), &9);
+        assert_eq!(list.get_tail().unwrap(), &9);
     }
 
     #[test]
@@ -302,17 +249,17 @@ mod tests {
         let mut list = LinkedList::new();
         list.add(1);
         list.add(2);
-        assert_eq!(list.get_head().as_ref().unwrap().get_data(), &1);
-        assert_eq!(list.get_tail().unwrap().get_data(), &2);
+        assert_eq!(list.get_head().unwrap(), &1);
+        assert_eq!(list.get_tail().unwrap(), &2);
         list.add(3);
-        assert_eq!(list.get_head().as_ref().unwrap().get_data(), &1);
-        assert_eq!(list.get_tail().unwrap().get_data(), &3);
+        assert_eq!(list.get_head().unwrap(), &1);
+        assert_eq!(list.get_tail().unwrap(), &3);
         list.add_first(0);
-        assert_eq!(list.get_head().as_ref().unwrap().get_data(), &0);
-        assert_eq!(list.get_tail().unwrap().get_data(), &3);
+        assert_eq!(list.get_head().unwrap(), &0);
+        assert_eq!(list.get_tail().unwrap(), &3);
         list.add_first(15);
-        assert_eq!(list.get_head().as_ref().unwrap().get_data(), &15);
-        assert_eq!(list.get_tail().unwrap().get_data(), &3);
+        assert_eq!(list.get_head().unwrap(), &15);
+        assert_eq!(list.get_tail().unwrap(), &3);
     }
 
     #[test]
@@ -323,14 +270,14 @@ mod tests {
         list.add(3);
         list.add(4);
         assert_eq!(
-            list.find(&1).unwrap().to_owned(),
-            Rc::from(LinkedListNode {
+            list.head.as_ref().unwrap(),
+            &Box::from(LinkedListNode {
                 data: 1,
-                next_node: Some(Rc::from(LinkedListNode {
+                next_node: Some(Box::from(LinkedListNode {
                     data: 2,
-                    next_node: Some(Rc::from(LinkedListNode {
+                    next_node: Some(Box::from(LinkedListNode {
                         data: 3,
-                        next_node: Some(Rc::from(LinkedListNode {
+                        next_node: Some(Box::from(LinkedListNode {
                             data: 4,
                             next_node: None,
                         })),
@@ -340,16 +287,16 @@ mod tests {
         );
         list.add_after(5, &3);
         assert_eq!(
-            list.find(&1).unwrap().to_owned(),
-            Rc::from(LinkedListNode {
+            list.head.as_ref().unwrap(),
+            &Box::from(LinkedListNode {
                 data: 1,
-                next_node: Some(Rc::from(LinkedListNode {
+                next_node: Some(Box::from(LinkedListNode {
                     data: 2,
-                    next_node: Some(Rc::from(LinkedListNode {
+                    next_node: Some(Box::from(LinkedListNode {
                         data: 3,
-                        next_node: Some(Rc::from(LinkedListNode {
+                        next_node: Some(Box::from(LinkedListNode {
                             data: 5,
-                            next_node: Some(Rc::from(LinkedListNode {
+                            next_node: Some(Box::from(LinkedListNode {
                                 data: 4,
                                 next_node: None,
                             })),
@@ -361,78 +308,17 @@ mod tests {
     }
 
     #[test]
-    fn find() {
-        let deep_tail = LinkedList {
-            head: Some(Rc::from(LinkedListNode {
-                data: 1,
-                next_node: Some(Rc::from(LinkedListNode {
-                    data: 2,
-                    next_node: Some(Rc::from(LinkedListNode {
-                        data: 3,
-                        next_node: Some(Rc::from(LinkedListNode {
-                            data: 4,
-                            next_node: Some(Rc::from(LinkedListNode {
-                                data: 5,
-                                next_node: None,
-                            })),
-                        })),
-                    })),
-                })),
-            })),
-        };
-        assert_eq!(
-            deep_tail.find(&1).unwrap(),
-            deep_tail.get_head().as_ref().unwrap().to_owned()
-        );
-        assert_eq!(
-            deep_tail
-                .find(&2)
-                .unwrap()
-                .get_next()
-                .as_ref()
-                .unwrap()
-                .to_owned()
-                .get_data(),
-            &3
-        );
-        assert_eq!(
-            deep_tail
-                .find(&3)
-                .unwrap()
-                .get_next()
-                .as_ref()
-                .unwrap()
-                .to_owned()
-                .get_data(),
-            &4
-        );
-        assert_eq!(
-            deep_tail
-                .find(&4)
-                .unwrap()
-                .get_next()
-                .as_ref()
-                .unwrap()
-                .to_owned()
-                .get_data(),
-            &5
-        );
-        assert_eq!(deep_tail.find(&5).unwrap().get_next(), &None);
-        assert_eq!(deep_tail.find(&6), None);
-    }
-
-    #[test]
     fn find_match_mut() {
         let mut deep_list = LinkedList {
-            head: Some(Rc::from(LinkedListNode {
+            head: Some(Box::from(LinkedListNode {
                 data: 1,
-                next_node: Some(Rc::from(LinkedListNode {
+                next_node: Some(Box::from(LinkedListNode {
                     data: 2,
-                    next_node: Some(Rc::from(LinkedListNode {
+                    next_node: Some(Box::from(LinkedListNode {
                         data: 3,
-                        next_node: Some(Rc::from(LinkedListNode {
+                        next_node: Some(Box::from(LinkedListNode {
                             data: 4,
-                            next_node: Some(Rc::from(LinkedListNode {
+                            next_node: Some(Box::from(LinkedListNode {
                                 data: 5,
                                 next_node: None,
                             })),
@@ -443,16 +329,17 @@ mod tests {
         };
         assert_eq!(
             deep_list
-                .find_match_mut(|node| node.has_next()
-                    && node.get_next().as_ref().unwrap().to_owned().get_data() == &3)
+                .find_match_mut(
+                    &|node| node.next_node.is_some() && node.next_node.as_ref().unwrap().data == 3
+                )
                 .unwrap(),
             &mut LinkedListNode {
                 data: 2,
-                next_node: Some(Rc::from(LinkedListNode {
+                next_node: Some(Box::from(LinkedListNode {
                     data: 3,
-                    next_node: Some(Rc::from(LinkedListNode {
+                    next_node: Some(Box::from(LinkedListNode {
                         data: 4,
-                        next_node: Some(Rc::from(LinkedListNode {
+                        next_node: Some(Box::from(LinkedListNode {
                             data: 5,
                             next_node: None,
                         })),
@@ -461,9 +348,7 @@ mod tests {
             },
         );
         assert_eq!(
-            deep_list
-                .find_match_mut(|node| node.get_data() == &5)
-                .unwrap(),
+            deep_list.find_match_mut(&|node| node.data == 5).unwrap(),
             &mut LinkedListNode {
                 data: 5,
                 next_node: None,
@@ -474,15 +359,15 @@ mod tests {
     #[test]
     fn delete() {
         let mut deep_list = LinkedList {
-            head: Some(Rc::from(LinkedListNode {
+            head: Some(Box::from(LinkedListNode {
                 data: 1,
-                next_node: Some(Rc::from(LinkedListNode {
+                next_node: Some(Box::from(LinkedListNode {
                     data: 2,
-                    next_node: Some(Rc::from(LinkedListNode {
+                    next_node: Some(Box::from(LinkedListNode {
                         data: 3,
-                        next_node: Some(Rc::from(LinkedListNode {
+                        next_node: Some(Box::from(LinkedListNode {
                             data: 4,
-                            next_node: Some(Rc::from(LinkedListNode {
+                            next_node: Some(Box::from(LinkedListNode {
                                 data: 5,
                                 next_node: None,
                             })),
@@ -493,60 +378,60 @@ mod tests {
         };
         deep_list.delete(&3);
         assert_eq!(
-            deep_list.get_head(),
-            &Some(Rc::from(LinkedListNode {
+            deep_list.head.as_ref().unwrap(),
+            &Box::from(LinkedListNode {
                 data: 1,
-                next_node: Some(Rc::from(LinkedListNode {
+                next_node: Some(Box::from(LinkedListNode {
                     data: 2,
-                    next_node: Some(Rc::from(LinkedListNode {
+                    next_node: Some(Box::from(LinkedListNode {
                         data: 4,
-                        next_node: Some(Rc::from(LinkedListNode {
+                        next_node: Some(Box::from(LinkedListNode {
                             data: 5,
                             next_node: None,
                         })),
                     })),
                 })),
-            }))
+            })
         );
         deep_list.delete(&1);
         assert_eq!(
-            deep_list.get_head(),
-            &Some(Rc::from(LinkedListNode {
+            deep_list.head.as_ref().unwrap(),
+            &Box::from(LinkedListNode {
                 data: 2,
-                next_node: Some(Rc::from(LinkedListNode {
+                next_node: Some(Box::from(LinkedListNode {
                     data: 4,
-                    next_node: Some(Rc::from(LinkedListNode {
+                    next_node: Some(Box::from(LinkedListNode {
                         data: 5,
                         next_node: None,
                     })),
                 })),
-            }))
+            })
         );
         deep_list.delete(&5);
         deep_list.delete(&2);
         assert_eq!(
-            deep_list.get_head(),
-            &Some(Rc::from(LinkedListNode {
+            deep_list.head.as_ref().unwrap(),
+            &Box::from(LinkedListNode {
                 data: 4,
                 next_node: None,
-            }))
+            })
         );
         deep_list.delete(&4);
-        assert_eq!(deep_list.get_head(), &None);
+        assert_eq!(deep_list.get_head(), None);
     }
 
     #[test]
     fn delete_match() {
         let mut deep_list = LinkedList {
-            head: Some(Rc::from(LinkedListNode {
+            head: Some(Box::from(LinkedListNode {
                 data: 1,
-                next_node: Some(Rc::from(LinkedListNode {
+                next_node: Some(Box::from(LinkedListNode {
                     data: 2,
-                    next_node: Some(Rc::from(LinkedListNode {
+                    next_node: Some(Box::from(LinkedListNode {
                         data: 3,
-                        next_node: Some(Rc::from(LinkedListNode {
+                        next_node: Some(Box::from(LinkedListNode {
                             data: 4,
-                            next_node: Some(Rc::from(LinkedListNode {
+                            next_node: Some(Box::from(LinkedListNode {
                                 data: 5,
                                 next_node: None,
                             })),
@@ -557,62 +442,62 @@ mod tests {
         };
         deep_list.delete_match(|node| node.get_data() == &3);
         assert_eq!(
-            deep_list.get_head(),
-            &Some(Rc::from(LinkedListNode {
+            deep_list.head.as_ref().unwrap(),
+            &Box::from(LinkedListNode {
                 data: 1,
-                next_node: Some(Rc::from(LinkedListNode {
+                next_node: Some(Box::from(LinkedListNode {
                     data: 2,
-                    next_node: Some(Rc::from(LinkedListNode {
+                    next_node: Some(Box::from(LinkedListNode {
                         data: 4,
-                        next_node: Some(Rc::from(LinkedListNode {
+                        next_node: Some(Box::from(LinkedListNode {
                             data: 5,
                             next_node: None,
                         })),
                     })),
                 })),
-            }))
+            })
         );
         deep_list.delete_match(|node| {
             if let Some(next) = node.get_next() {
-                if next.get_data() == &2 {
+                if next == &2 {
                     return true;
                 }
             }
             return false;
         });
         assert_eq!(
-            deep_list.get_head(),
-            &Some(Rc::from(LinkedListNode {
+            deep_list.head.as_ref().unwrap(),
+            &Box::from(LinkedListNode {
                 data: 2,
-                next_node: Some(Rc::from(LinkedListNode {
+                next_node: Some(Box::from(LinkedListNode {
                     data: 4,
-                    next_node: Some(Rc::from(LinkedListNode {
+                    next_node: Some(Box::from(LinkedListNode {
                         data: 5,
                         next_node: None,
                     })),
                 })),
-            }))
+            })
         );
         deep_list.delete_match(|node| node.get_next().is_none());
         assert_eq!(
-            deep_list.get_head(),
-            &Some(Rc::from(LinkedListNode {
+            deep_list.head.as_ref().unwrap(),
+            &Box::from(LinkedListNode {
                 data: 2,
-                next_node: Some(Rc::from(LinkedListNode {
+                next_node: Some(Box::from(LinkedListNode {
                     data: 4,
                     next_node: None,
                 })),
-            }))
+            })
         );
         deep_list.delete_match(|node| node.get_data() == &2);
         assert_eq!(
-            deep_list.get_head(),
-            &Some(Rc::from(LinkedListNode {
+            deep_list.head.as_ref().unwrap(),
+            &Box::from(LinkedListNode {
                 data: 4,
                 next_node: None,
-            }))
+            })
         );
         deep_list.delete_match(|node| node.get_data() / 2 == 2);
-        assert_eq!(deep_list.get_head(), &None);
+        assert_eq!(deep_list.get_head(), None);
     }
 }
