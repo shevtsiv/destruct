@@ -185,6 +185,10 @@ impl<T: PartialEq> LinkedList<T> {
             return head.data;
         })
     }
+
+    pub fn peek(&self) -> Option<&T> {
+        self.head.as_ref().map(|head| &head.data)
+    }
 }
 
 #[cfg(test)]
@@ -534,5 +538,19 @@ mod tests {
         assert_eq!(list.pop().unwrap(), 4);
         assert_eq!(list.pop().unwrap(), 5);
         assert_eq!(list.pop(), None);
+    }
+
+    #[test]
+    fn peek() {
+        let mut list = LinkedList::new();
+        assert_eq!(list.peek(), None);
+        list.add(1);
+        assert_eq!(list.peek(), Some(&1));
+        list.add_first(2);
+        assert_eq!(list.peek(), Some(&2));
+        list.add_first(3);
+        assert_eq!(list.peek(), Some(&3));
+        list.add(4);
+        assert_eq!(list.peek(), Some(&3));
     }
 }
