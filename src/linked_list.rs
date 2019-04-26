@@ -189,6 +189,21 @@ impl<T: PartialEq> LinkedList<T> {
     pub fn peek(&self) -> Option<&T> {
         self.head.as_ref().map(|head| &head.data)
     }
+
+    pub fn contains(&self, value: &T) -> bool {
+        if let Some(mut node) = self.head.as_ref() {
+            while &node.data != value {
+                if let Some(ref next) = node.next_node {
+                    node = next;
+                } else {
+                    return false;
+                }
+            }
+            return true;
+        } else {
+            false
+        }
+    }
 }
 
 #[cfg(test)]
@@ -552,5 +567,22 @@ mod tests {
         assert_eq!(list.peek(), Some(&3));
         list.add(4);
         assert_eq!(list.peek(), Some(&3));
+    }
+
+    #[test]
+    fn contains() {
+        let mut list = LinkedList::new();
+        assert!(!list.contains(&0));
+        list.add(0);
+        assert!(list.contains(&0));
+        list.add(1);
+        list.add(5);
+        list.add(9);
+        assert!(list.contains(&1));
+        assert!(list.contains(&5));
+        assert!(list.contains(&9));
+        assert!(!list.contains(&10));
+        list.add(10);
+        assert!(list.contains(&10));
     }
 }
