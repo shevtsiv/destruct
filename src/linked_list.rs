@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 
 #[derive(PartialOrd, PartialEq, Debug)]
-pub struct LinkedListNode<T: PartialEq> {
+struct LinkedListNode<T: PartialEq> {
     data: T,
     next_node: Option<Box<LinkedListNode<T>>>,
 }
@@ -11,18 +11,6 @@ pub struct LinkedList<T: PartialEq> {
 }
 
 impl<T: PartialEq> LinkedListNode<T> {
-    pub fn get_data(&self) -> &T {
-        &self.data
-    }
-
-    pub fn get_next(&self) -> Option<&T> {
-        if let Some(ref next) = self.next_node {
-            return Some(next.get_data());
-        } else {
-            return None;
-        }
-    }
-
     pub fn has_next(&self) -> bool {
         self.next_node.is_some()
     }
@@ -127,40 +115,12 @@ impl<T: PartialEq> LinkedList<T> {
             return None;
         }
     }
-    //
-    fn find_match_mut<F>(&mut self, predicate: &F) -> Option<&mut LinkedListNode<T>>
-    where
-        F: Fn(&LinkedListNode<T>) -> bool,
-    {
-        if let Some(ref mut head) = self.head {
-            let mut node = head;
-            loop {
-                if predicate(&node) {
-                    return Some(node);
-                }
-                if let Some(ref mut next) = node.next_node {
-                    node = next;
-                } else {
-                    return None;
-                }
-            }
-        } else {
-            return None;
-        }
-    }
 
     pub fn delete(&mut self, value: &T) {
-        if self.find_mut(value).is_none() {
+        if !self.contains(value) {
             return;
         }
-        let prev = self.find_match_mut(&|node| {
-            if let Some(ref next) = node.next_node {
-                if &next.data == value {
-                    return true;
-                }
-            }
-            false
-        });
+        let prev = self.get_prev_node(value);
         if let Some(prev) = prev {
             prev.next_node = prev.next_node.take().unwrap().next_node;
         } else {
@@ -170,19 +130,12 @@ impl<T: PartialEq> LinkedList<T> {
 
     pub fn delete_match<F>(&mut self, predicate: F)
     where
-        F: Fn(&LinkedListNode<T>) -> bool,
+        F: Fn(&T) -> bool,
     {
-        if self.find_match_mut(&predicate).is_none() {
+        if !self.contains_match(&predicate) {
             return;
         }
-        let prev = self.find_match_mut(&|node| {
-            if let Some(ref next) = node.next_node {
-                if predicate(next) {
-                    return true;
-                }
-            }
-            false
-        });
+        let prev = self.get_prev_node_match(&predicate);
         if let Some(prev) = prev {
             prev.next_node = prev.next_node.take().unwrap().next_node;
         } else {
@@ -213,6 +166,59 @@ impl<T: PartialEq> LinkedList<T> {
             return true;
         } else {
             false
+        }
+    }
+
+    pub fn contains_match<F>(&self, predicate: &F) -> bool
+    where
+        F: Fn(&T) -> bool,
+    {
+        if let Some(mut node) = self.head.as_ref() {
+            while !predicate(&node.data) {
+                if let Some(ref next) = node.next_node {
+                    node = next;
+                } else {
+                    return false;
+                }
+            }
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    fn get_prev_node(&mut self, value: &T) -> Option<&mut Box<LinkedListNode<T>>> {
+        if let Some(ref mut head) = self.head {
+            let mut node = head;
+            while let Some(ref next) = node.next_node {
+                if &next.data == value {
+                    return Some(node);
+                } else {
+                    node = node.next_node.as_mut().unwrap();
+                }
+            }
+            return None;
+        } else {
+            return None;
+        }
+    }
+
+    fn get_prev_node_match<F>(&mut self, predicate: &F) -> Option<&mut Box<LinkedListNode<T>>>
+    where
+        F: Fn(&T) -> bool,
+    {
+        if let Some(ref mut head) = self.head {
+            let mut node = head;
+            while let Some(ref next) = node.next_node {
+                if predicate(&next.data) {
+                    return Some(node);
+                } else {
+                    node = node.next_node.as_mut().unwrap();
+                }
+            }
+            return None;
+        } else {
+            return None;
         }
     }
 }
@@ -345,55 +351,6 @@ mod tests {
     }
 
     #[test]
-    fn find_match_mut() {
-        let mut deep_list = LinkedList {
-            head: Some(Box::from(LinkedListNode {
-                data: 1,
-                next_node: Some(Box::from(LinkedListNode {
-                    data: 2,
-                    next_node: Some(Box::from(LinkedListNode {
-                        data: 3,
-                        next_node: Some(Box::from(LinkedListNode {
-                            data: 4,
-                            next_node: Some(Box::from(LinkedListNode {
-                                data: 5,
-                                next_node: None,
-                            })),
-                        })),
-                    })),
-                })),
-            })),
-        };
-        assert_eq!(
-            deep_list
-                .find_match_mut(
-                    &|node| node.has_next() && node.next_node.as_ref().unwrap().data == 3
-                )
-                .unwrap(),
-            &mut LinkedListNode {
-                data: 2,
-                next_node: Some(Box::from(LinkedListNode {
-                    data: 3,
-                    next_node: Some(Box::from(LinkedListNode {
-                        data: 4,
-                        next_node: Some(Box::from(LinkedListNode {
-                            data: 5,
-                            next_node: None,
-                        })),
-                    })),
-                })),
-            },
-        );
-        assert_eq!(
-            deep_list.find_match_mut(&|node| node.data == 5).unwrap(),
-            &mut LinkedListNode {
-                data: 5,
-                next_node: None,
-            },
-        );
-    }
-
-    #[test]
     fn delete() {
         let mut deep_list = LinkedList {
             head: Some(Box::from(LinkedListNode {
@@ -477,7 +434,7 @@ mod tests {
                 })),
             })),
         };
-        deep_list.delete_match(|node| node.get_data() == &3);
+        deep_list.delete_match(|value| value == &3);
         assert_eq!(
             deep_list.head.as_ref().unwrap(),
             &Box::from(LinkedListNode {
@@ -494,14 +451,7 @@ mod tests {
                 })),
             })
         );
-        deep_list.delete_match(|node| {
-            if let Some(next) = node.get_next() {
-                if next == &2 {
-                    return true;
-                }
-            }
-            return false;
-        });
+        deep_list.delete_match(|value| value == &1);
         assert_eq!(
             deep_list.head.as_ref().unwrap(),
             &Box::from(LinkedListNode {
@@ -515,7 +465,7 @@ mod tests {
                 })),
             })
         );
-        deep_list.delete_match(|node| node.get_next().is_none());
+        deep_list.delete_match(|value| value / 5 == 1);
         assert_eq!(
             deep_list.head.as_ref().unwrap(),
             &Box::from(LinkedListNode {
@@ -526,7 +476,7 @@ mod tests {
                 })),
             })
         );
-        deep_list.delete_match(|node| node.get_data() == &2);
+        deep_list.delete_match(|value| value == &2);
         assert_eq!(
             deep_list.head.as_ref().unwrap(),
             &Box::from(LinkedListNode {
@@ -534,7 +484,7 @@ mod tests {
                 next_node: None,
             })
         );
-        deep_list.delete_match(|node| node.get_data() / 2 == 2);
+        deep_list.delete_match(|value| value / 2 == 2);
         assert_eq!(deep_list.get_head(), None);
     }
 
