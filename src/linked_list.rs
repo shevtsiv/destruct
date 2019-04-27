@@ -22,6 +22,10 @@ impl<T: PartialEq> LinkedListNode<T> {
             return None;
         }
     }
+
+    pub fn has_next(&self) -> bool {
+        self.next_node.is_some()
+    }
 }
 
 impl<T: PartialEq> LinkedList<T> {
@@ -50,7 +54,7 @@ impl<T: PartialEq> LinkedList<T> {
     pub fn get_tail_mut(&mut self) -> Option<&mut T> {
         if let Some(ref mut head) = self.head {
             let mut tail = head;
-            while tail.next_node.is_some() {
+            while tail.has_next() {
                 tail = tail.next_node.as_mut().unwrap();
             }
             return Some(&mut tail.data);
@@ -356,7 +360,7 @@ mod tests {
         assert_eq!(
             deep_list
                 .find_match_mut(
-                    &|node| node.next_node.is_some() && node.next_node.as_ref().unwrap().data == 3
+                    &|node| node.has_next() && node.next_node.as_ref().unwrap().data == 3
                 )
                 .unwrap(),
             &mut LinkedListNode {
