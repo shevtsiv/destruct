@@ -33,8 +33,15 @@ impl<T: PartialEq> LinkedList<T> {
         self.head.as_ref().map(|node| &node.data)
     }
 
-    pub fn get_head_mut(&mut self) -> Option<&mut T> {
-        self.head.as_mut().map(|node| &mut node.data)
+    pub fn set_head(&mut self, value: T) {
+        if let Some(ref mut head) = self.head {
+            head.data = value;
+        } else {
+            self.head = Some(Box::from(LinkedListNode {
+                data: value,
+                next_node: None,
+            }));
+        }
     }
 
     pub fn get_tail(&self) -> Option<&T> {
@@ -588,5 +595,37 @@ mod tests {
         assert!(!list.contains(&10));
         list.add(10);
         assert!(list.contains(&10));
+    }
+
+    #[test]
+    fn set_head() {
+        let mut list = LinkedList::new();
+        assert_eq!(list.get_head(), None);
+        #[derive(PartialOrd, PartialEq, Debug)]
+        struct SomeInnerObject {
+            inner_string: String,
+        }
+        list.add(SomeInnerObject {
+            inner_string: "head".to_string(),
+        });
+        list.add(SomeInnerObject {
+            inner_string: "second".to_string(),
+        });
+        list.add(SomeInnerObject {
+            inner_string: "third".to_string(),
+        });
+        list.add(SomeInnerObject {
+            inner_string: "fourth".to_string(),
+        });
+        assert_eq!(list.get_head().unwrap().inner_string, "head");
+        list.set_head(SomeInnerObject {
+            inner_string: "new head".to_string(),
+        });
+        assert_eq!(list.get_head().unwrap().inner_string, "new head");
+        // Pop head, change it and set back
+        let mut head = list.pop().unwrap();
+        head.inner_string = "changed head".to_string();
+        list.set_head(head);
+        assert_eq!(list.get_head().unwrap().inner_string, "changed head");
     }
 }
