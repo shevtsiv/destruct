@@ -221,6 +221,18 @@ impl<T: PartialEq> LinkedList<T> {
             return None;
         }
     }
+
+    pub fn len(&self) -> usize {
+        let mut len = 0;
+        if let Some(mut node) = self.head.as_ref() {
+            len = 1;
+            while let Some(ref next) = node.next_node {
+                node = next;
+                len += 1;
+            }
+        }
+        len
+    }
 }
 
 #[cfg(test)]
@@ -577,5 +589,25 @@ mod tests {
         head.inner_string = "changed head".to_string();
         list.set_head(head);
         assert_eq!(list.get_head().unwrap().inner_string, "changed head");
+    }
+
+    #[test]
+    fn len() {
+        let mut list = LinkedList::new();
+        assert_eq!(list.len(), 0);
+        list.add(1);
+        assert_eq!(list.len(), 1);
+        list.add(5);
+        list.add(10);
+        list.add(20);
+        assert_eq!(list.len(), 4);
+        list.pop();
+        assert_eq!(list.len(), 3);
+        list.pop();
+        assert_eq!(list.len(), 2);
+        list.pop();
+        assert_eq!(list.len(), 1);
+        list.pop();
+        assert_eq!(list.len(), 0);
     }
 }
