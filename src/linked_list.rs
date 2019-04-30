@@ -8,6 +8,7 @@ struct LinkedListNode<T: PartialEq> {
 
 pub struct LinkedList<T: PartialEq> {
     head: Option<Box<LinkedListNode<T>>>,
+    len: usize,
 }
 
 impl<T: PartialEq> LinkedListNode<T> {
@@ -29,6 +30,7 @@ impl<T: PartialEq> LinkedList<T> {
                 data: value,
                 next_node: None,
             }));
+            self.len += 1;
         }
     }
 
@@ -59,7 +61,7 @@ impl<T: PartialEq> LinkedList<T> {
     }
 
     pub fn new() -> Self {
-        LinkedList { head: None }
+        LinkedList { head: None, len: 0 }
     }
 
     pub fn add(&mut self, value: T) {
@@ -76,8 +78,9 @@ impl<T: PartialEq> LinkedList<T> {
             self.head = Some(Box::from(LinkedListNode {
                 data: value,
                 next_node: None,
-            }))
+            }));
         }
+        self.len += 1;
     }
 
     pub fn add_first(&mut self, value: T) {
@@ -85,6 +88,7 @@ impl<T: PartialEq> LinkedList<T> {
             data: value,
             next_node: self.head.take(),
         }));
+        self.len += 1;
     }
 
     pub fn add_after(&mut self, value: T, after: &T)
@@ -98,6 +102,7 @@ impl<T: PartialEq> LinkedList<T> {
             data: value,
             next_node: after_node.next_node.take(),
         }));
+        self.len += 1;
     }
 
     fn find_mut(&mut self, value: &T) -> Option<&mut LinkedListNode<T>> {
@@ -126,6 +131,7 @@ impl<T: PartialEq> LinkedList<T> {
         } else {
             self.head = self.head.take().unwrap().next_node;
         }
+        self.len -= 1;
     }
 
     pub fn delete_match<F>(&mut self, predicate: F)
@@ -141,11 +147,13 @@ impl<T: PartialEq> LinkedList<T> {
         } else {
             self.head = self.head.take().unwrap().next_node;
         }
+        self.len -= 1;
     }
 
     pub fn pop(&mut self) -> Option<T> {
         self.head.take().map(|head| {
             self.head = head.next_node;
+            self.len -= 1;
             return head.data;
         })
     }
@@ -223,15 +231,7 @@ impl<T: PartialEq> LinkedList<T> {
     }
 
     pub fn len(&self) -> usize {
-        let mut len = 0;
-        if let Some(mut node) = self.head.as_ref() {
-            len = 1;
-            while let Some(ref next) = node.next_node {
-                node = next;
-                len += 1;
-            }
-        }
-        len
+        self.len
     }
 }
 
@@ -256,6 +256,7 @@ mod tests {
                     next_node: None,
                 })),
             })),
+            len: 2,
         };
         assert_eq!(has_tail.get_tail().unwrap(), &2);
         let head_only = LinkedList {
@@ -263,6 +264,7 @@ mod tests {
                 data: 1,
                 next_node: None,
             })),
+            len: 1,
         };
         assert_eq!(head_only.get_tail().unwrap(), &1);
         let deep_tail = LinkedList {
@@ -282,6 +284,7 @@ mod tests {
                     })),
                 })),
             })),
+            len: 5,
         };
         assert_eq!(deep_tail.get_tail().unwrap(), &5);
     }
@@ -381,6 +384,7 @@ mod tests {
                     })),
                 })),
             })),
+            len: 5,
         };
         deep_list.delete(&3);
         assert_eq!(
@@ -445,6 +449,7 @@ mod tests {
                     })),
                 })),
             })),
+            len: 5,
         };
         deep_list.delete_match(|value| value == &3);
         assert_eq!(
@@ -519,6 +524,7 @@ mod tests {
                     })),
                 })),
             })),
+            len: 5,
         };
         assert_eq!(list.pop().unwrap(), 1);
         assert_eq!(list.pop().unwrap(), 2);
