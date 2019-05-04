@@ -235,13 +235,29 @@ impl<T: PartialEq> LinkedList<T> {
     }
 }
 
+impl<T: PartialEq> From<Vec<T>> for LinkedList<T> {
+    fn from(vec: Vec<T>) -> Self {
+        let mut list = LinkedList::new();
+        for element in vec {
+            list.add(element);
+        }
+        list
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::linked_list::{LinkedList, LinkedListNode};
 
     #[test]
-    fn new() {
-        let _linked_list: LinkedList<i32> = LinkedList::new();
+    fn from() {
+        let mut list = LinkedList::from(vec![1, 2, 3, 4, 5]);
+        assert_eq!(list.pop().unwrap(), 1);
+        assert_eq!(list.pop().unwrap(), 2);
+        assert_eq!(list.pop().unwrap(), 3);
+        assert_eq!(list.pop().unwrap(), 4);
+        assert_eq!(list.pop().unwrap(), 5);
+        assert_eq!(list.pop(), None);
     }
 
     #[test]
