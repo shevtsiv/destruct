@@ -264,44 +264,11 @@ mod tests {
     fn get_tail() {
         let empty: LinkedList<i32> = LinkedList::new();
         assert_eq!(empty.get_tail(), None);
-        let has_tail = LinkedList {
-            head: Some(Box::from(LinkedListNode {
-                data: 1,
-                next_node: Some(Box::from(LinkedListNode {
-                    data: 2,
-                    next_node: None,
-                })),
-            })),
-            len: 2,
-        };
+        let has_tail = LinkedList::from(vec![1, 2]);
         assert_eq!(has_tail.get_tail().unwrap(), &2);
-        let head_only = LinkedList {
-            head: Some(Box::from(LinkedListNode {
-                data: 1,
-                next_node: None,
-            })),
-            len: 1,
-        };
+        let head_only = LinkedList::from(vec![1]);
         assert_eq!(head_only.get_tail().unwrap(), &1);
-        let deep_tail = LinkedList {
-            head: Some(Box::from(LinkedListNode {
-                data: 1,
-                next_node: Some(Box::from(LinkedListNode {
-                    data: 2,
-                    next_node: Some(Box::from(LinkedListNode {
-                        data: 3,
-                        next_node: Some(Box::from(LinkedListNode {
-                            data: 4,
-                            next_node: Some(Box::from(LinkedListNode {
-                                data: 5,
-                                next_node: None,
-                            })),
-                        })),
-                    })),
-                })),
-            })),
-            len: 5,
-        };
+        let deep_tail = LinkedList::from(vec![1, 2, 3, 4, 5]);
         assert_eq!(deep_tail.get_tail().unwrap(), &5);
     }
 
@@ -383,25 +350,7 @@ mod tests {
 
     #[test]
     fn delete() {
-        let mut deep_list = LinkedList {
-            head: Some(Box::from(LinkedListNode {
-                data: 1,
-                next_node: Some(Box::from(LinkedListNode {
-                    data: 2,
-                    next_node: Some(Box::from(LinkedListNode {
-                        data: 3,
-                        next_node: Some(Box::from(LinkedListNode {
-                            data: 4,
-                            next_node: Some(Box::from(LinkedListNode {
-                                data: 5,
-                                next_node: None,
-                            })),
-                        })),
-                    })),
-                })),
-            })),
-            len: 5,
-        };
+        let mut deep_list = LinkedList::from(vec![1, 2, 3, 4, 5]);
         deep_list.delete(&3);
         assert_eq!(
             deep_list.head.as_ref().unwrap(),
@@ -448,25 +397,7 @@ mod tests {
 
     #[test]
     fn delete_match() {
-        let mut deep_list = LinkedList {
-            head: Some(Box::from(LinkedListNode {
-                data: 1,
-                next_node: Some(Box::from(LinkedListNode {
-                    data: 2,
-                    next_node: Some(Box::from(LinkedListNode {
-                        data: 3,
-                        next_node: Some(Box::from(LinkedListNode {
-                            data: 4,
-                            next_node: Some(Box::from(LinkedListNode {
-                                data: 5,
-                                next_node: None,
-                            })),
-                        })),
-                    })),
-                })),
-            })),
-            len: 5,
-        };
+        let mut deep_list = LinkedList::from(vec![1, 2, 3, 4, 5]);
         deep_list.delete_match(|value| value == &3);
         assert_eq!(
             deep_list.head.as_ref().unwrap(),
@@ -523,25 +454,7 @@ mod tests {
 
     #[test]
     fn pop() {
-        let mut list = LinkedList {
-            head: Some(Box::from(LinkedListNode {
-                data: 1,
-                next_node: Some(Box::from(LinkedListNode {
-                    data: 2,
-                    next_node: Some(Box::from(LinkedListNode {
-                        data: 3,
-                        next_node: Some(Box::from(LinkedListNode {
-                            data: 4,
-                            next_node: Some(Box::from(LinkedListNode {
-                                data: 5,
-                                next_node: None,
-                            })),
-                        })),
-                    })),
-                })),
-            })),
-            len: 5,
-        };
+        let mut list = LinkedList::from(vec![1, 2, 3, 4, 5]);
         assert_eq!(list.pop().unwrap(), 1);
         assert_eq!(list.pop().unwrap(), 2);
         assert_eq!(list.pop().unwrap(), 3);
