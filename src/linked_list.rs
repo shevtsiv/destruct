@@ -233,6 +233,10 @@ impl<T: PartialEq> LinkedList<T> {
     pub fn len(&self) -> usize {
         self.len
     }
+
+    pub fn into_iter(self) -> IntoIter<T> {
+        IntoIter(self)
+    }
 }
 
 impl<T: PartialEq> From<Vec<T>> for LinkedList<T> {
@@ -242,6 +246,15 @@ impl<T: PartialEq> From<Vec<T>> for LinkedList<T> {
             list.add(element);
         }
         list
+    }
+}
+
+pub struct IntoIter<T: PartialEq>(LinkedList<T>);
+
+impl<T: PartialEq> Iterator for IntoIter<T> {
+    type Item = T;
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.pop()
     }
 }
 
@@ -544,5 +557,18 @@ mod tests {
         assert_eq!(list.len(), 1);
         list.pop();
         assert_eq!(list.len(), 0);
+    }
+
+    #[test]
+    fn into_iter() {
+        let list = LinkedList::from(vec![1, 2, 3, 4, 5]);
+        let mut iter = list.into_iter();
+        assert_eq!(iter.next().unwrap(), 1);
+        assert_eq!(iter.next().unwrap(), 2);
+        assert_eq!(iter.next().unwrap(), 3);
+        assert_eq!(iter.next().unwrap(), 4);
+        assert_eq!(iter.next().unwrap(), 5);
+        assert_eq!(iter.next(), None);
+        assert_eq!(iter.count(), 0);
     }
 }
