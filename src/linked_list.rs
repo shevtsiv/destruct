@@ -6,6 +6,7 @@ struct LinkedListNode<T: PartialEq> {
     next_node: Option<Box<LinkedListNode<T>>>,
 }
 
+#[derive(PartialEq, Debug)]
 pub struct LinkedList<T: PartialEq> {
     head: Option<Box<LinkedListNode<T>>>,
     len: usize,
@@ -242,6 +243,18 @@ impl<T: PartialEq> LinkedList<T> {
     pub fn into_iter(self) -> IntoIter<T> {
         IntoIter(self)
     }
+
+    pub fn iter(&self) -> Iter<T> {
+        Iter {
+            next: self.head.as_ref().map(|node| &**node),
+        }
+    }
+
+    pub fn iter_mut(&mut self) -> IterMut<T> {
+        IterMut {
+            next: self.head.as_mut().map(|node| &mut **node),
+        }
+    }
 }
 
 impl<T: PartialEq> From<Vec<T>> for LinkedList<T> {
@@ -260,6 +273,36 @@ impl<T: PartialEq> Iterator for IntoIter<T> {
     type Item = T;
     fn next(&mut self) -> Option<Self::Item> {
         self.0.pop()
+    }
+}
+
+pub struct Iter<'a, T: PartialEq> {
+    next: Option<&'a LinkedListNode<T>>,
+}
+
+impl<'a, T: PartialEq> Iterator for Iter<'a, T> {
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.next.map(|node| {
+            self.next = node.next_node.as_ref().map(|node| &**node);
+            &node.data
+        })
+    }
+}
+
+pub struct IterMut<'a, T: PartialEq> {
+    next: Option<&'a mut LinkedListNode<T>>,
+}
+
+impl<'a, T: PartialEq> Iterator for IterMut<'a, T> {
+    type Item = &'a mut T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.next.take().map(|node| {
+            self.next = node.next_node.as_mut().map(|node| &mut **node);
+            &mut node.data
+        })
     }
 }
 
@@ -581,5 +624,27 @@ mod tests {
         assert_eq!(iter.next().unwrap(), 5);
         assert_eq!(iter.next(), None);
         assert_eq!(iter.count(), 0);
+    }
+
+    #[test]
+    fn iter() {
+        let list = LinkedList::from(vec![1, 2, 3, 4, 5]);
+        let mut iter = list.iter();
+        assert_eq!(*iter.next().unwrap(), 1);
+        assert_eq!(*iter.next().unwrap(), 2);
+        assert_eq!(*iter.next().unwrap(), 3);
+        assert_eq!(*iter.next().unwrap(), 4);
+        assert_eq!(*iter.next().unwrap(), 5);
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn iter_mut() {
+        let mut list = LinkedList::from(vec![1, 2, 3, 4, 5]);
+        let iter_mut = list.iter_mut();
+        for list_elem in iter_mut {
+            *list_elem *= 2;
+        }
+        assert_eq!(list, LinkedList::from(vec![2, 4, 6, 8, 10]));
     }
 }
