@@ -134,20 +134,25 @@ impl<T: PartialEq> LinkedList<T> {
         self.len -= 1;
     }
 
-    pub fn delete_match<F>(&mut self, predicate: F)
+    pub fn delete_match<F>(&mut self, predicate: F) -> Option<T>
     where
         F: Fn(&T) -> bool,
     {
-        if !self.contains_match(&predicate) {
-            return;
-        }
-        let prev = self.get_prev_node_match(&predicate);
-        if let Some(prev) = prev {
-            prev.next_node = prev.next_node.take().unwrap().next_node;
+        if let Some(prev) = self.get_prev_node_match(&predicate) {
+            if let Some(node_to_delete) = prev.next_node.take() {
+                prev.next_node = node_to_delete.next_node;
+                self.len -= 1;
+                return Some(node_to_delete.data);
+            }
         } else {
-            self.head = self.head.take().unwrap().next_node;
+            if predicate(&self.head.as_ref()?.data) {
+                let head = self.head.take()?;
+                self.head = head.next_node;
+                self.len -= 1;
+                return Some(head.data);
+            }
         }
-        self.len -= 1;
+        None
     }
 
     pub fn pop(&mut self) -> Option<T> {
@@ -411,7 +416,9 @@ mod tests {
     #[test]
     fn delete_match() {
         let mut deep_list = LinkedList::from(vec![1, 2, 3, 4, 5]);
-        deep_list.delete_match(|value| value == &3);
+        assert_eq!(deep_list.len(), 5);
+        assert_eq!(deep_list.delete_match(|value| value == &3).unwrap(), 3);
+        assert_eq!(deep_list.len(), 4);
         assert_eq!(
             deep_list.head.as_ref().unwrap(),
             &Box::from(LinkedListNode {
@@ -428,7 +435,8 @@ mod tests {
                 })),
             })
         );
-        deep_list.delete_match(|value| value == &1);
+        assert_eq!(deep_list.delete_match(|value| value == &1).unwrap(), 1);
+        assert_eq!(deep_list.len(), 3);
         assert_eq!(
             deep_list.head.as_ref().unwrap(),
             &Box::from(LinkedListNode {
@@ -442,7 +450,8 @@ mod tests {
                 })),
             })
         );
-        deep_list.delete_match(|value| value / 5 == 1);
+        assert_eq!(deep_list.delete_match(|value| value / 5 == 1).unwrap(), 5);
+        assert_eq!(deep_list.len(), 2);
         assert_eq!(
             deep_list.head.as_ref().unwrap(),
             &Box::from(LinkedListNode {
@@ -453,7 +462,8 @@ mod tests {
                 })),
             })
         );
-        deep_list.delete_match(|value| value == &2);
+        assert_eq!(deep_list.delete_match(|value| value == &2).unwrap(), 2);
+        assert_eq!(deep_list.len(), 1);
         assert_eq!(
             deep_list.head.as_ref().unwrap(),
             &Box::from(LinkedListNode {
@@ -461,7 +471,8 @@ mod tests {
                 next_node: None,
             })
         );
-        deep_list.delete_match(|value| value / 2 == 2);
+        assert_eq!(deep_list.delete_match(|value| value / 2 == 2).unwrap(), 4);
+        assert_eq!(deep_list.len(), 0);
         assert_eq!(deep_list.get_head(), None);
     }
 
