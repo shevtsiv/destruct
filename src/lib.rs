@@ -1,4 +1,5 @@
 pub mod graph;
+pub mod hashmap;
 pub mod linked_list;
 pub mod linked_stack;
 pub mod queue;
