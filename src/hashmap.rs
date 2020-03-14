@@ -4,6 +4,7 @@ use std::hash::{Hash, Hasher};
 
 pub struct HashMap<K: Hash + PartialEq, V: PartialEq> {
     buckets: Vec<LinkedList<Entry<K, V>>>,
+    size: usize,
 }
 
 #[derive(PartialEq)]
@@ -19,6 +20,7 @@ impl<K: Hash + PartialEq, V: PartialEq> HashMap<K, V> {
         if let Some(entry) = entry_list.iter_mut().find(|node| node.key == key) {
             entry.value = value;
         } else {
+            self.size += 1;
             let new_entry = Entry { key, value };
             entry_list.add(new_entry);
         }
@@ -36,7 +38,10 @@ impl<K: Hash + PartialEq, V: PartialEq> HashMap<K, V> {
         let index = self.key_to_index(key);
         self.buckets[index]
             .delete_match(|entry| entry.key == *key)
-            .map(|entry| entry.value)
+            .map(|entry| {
+                self.size -= 1;
+                entry.value
+            })
     }
 
     pub fn new() -> Self {
@@ -45,7 +50,10 @@ impl<K: Hash + PartialEq, V: PartialEq> HashMap<K, V> {
         for i in 0..initial_capacity - 1 {
             vec.insert(i, LinkedList::new())
         }
-        HashMap { buckets: vec }
+        HashMap {
+            buckets: vec,
+            size: 0,
+        }
     }
 
     pub fn with_capacity(initial_capacity: usize) -> Self {
@@ -53,7 +61,14 @@ impl<K: Hash + PartialEq, V: PartialEq> HashMap<K, V> {
         for i in 0..initial_capacity {
             vec.insert(i, LinkedList::new())
         }
-        HashMap { buckets: vec }
+        HashMap {
+            buckets: vec,
+            size: 0,
+        }
+    }
+
+    pub fn len(&self) -> usize {
+        self.size
     }
 
     fn key_to_index(&self, key: &K) -> usize {
@@ -75,8 +90,11 @@ mod tests {
     fn put_get() {
         let mut map: HashMap<i32, i32> = HashMap::new();
         map.put(1, 1);
+        assert_eq!(map.len(), 1);
         map.put(2, 3);
+        assert_eq!(map.len(), 2);
         map.put(4, 5);
+        assert_eq!(map.len(), 3);
         assert_eq!(*map.get(&1).unwrap(), 1);
         assert_eq!(*map.get(&2).unwrap(), 3);
         assert_eq!(*map.get(&4).unwrap(), 5);
@@ -88,14 +106,17 @@ mod tests {
         map.put(1, 1);
         map.put(2, 3);
         map.put(4, 5);
+        assert_eq!(map.len(), 3);
         assert_eq!(*map.get(&1).unwrap(), 1);
         assert_eq!(*map.get(&2).unwrap(), 3);
         assert_eq!(*map.get(&4).unwrap(), 5);
         map.put(1, 2);
+        assert_eq!(map.len(), 3);
         assert_eq!(*map.get(&1).unwrap(), 2);
         assert_eq!(*map.get(&2).unwrap(), 3);
         assert_eq!(*map.get(&4).unwrap(), 5);
         map.put(1, 10);
+        assert_eq!(map.len(), 3);
         assert_eq!(*map.get(&1).unwrap(), 10);
         assert_eq!(*map.get(&2).unwrap(), 3);
         assert_eq!(*map.get(&4).unwrap(), 5);
@@ -107,28 +128,35 @@ mod tests {
         map.put(1, 1);
         map.put(2, 3);
         map.put(4, 5);
+        assert_eq!(map.len(), 3);
         assert_eq!(*map.get(&1).unwrap(), 1);
         assert_eq!(*map.get(&2).unwrap(), 3);
         assert_eq!(*map.get(&4).unwrap(), 5);
         let result = map.remove(&1);
+        assert_eq!(map.len(), 2);
         assert_eq!(result.unwrap(), 1);
         assert_eq!(map.get(&1), None);
         assert_eq!(*map.get(&2).unwrap(), 3);
         assert_eq!(*map.get(&4).unwrap(), 5);
         let second_remove = map.remove(&1);
+        assert_eq!(map.len(), 2);
         assert_eq!(second_remove, None);
         let result = map.remove(&2);
+        assert_eq!(map.len(), 1);
         assert_eq!(result.unwrap(), 3);
         assert_eq!(map.get(&1), None);
         assert_eq!(map.get(&2), None);
         assert_eq!(*map.get(&4).unwrap(), 5);
         let second_remove = map.remove(&2);
+        assert_eq!(map.len(), 1);
         assert_eq!(second_remove, None);
         let result = map.remove(&4);
+        assert_eq!(map.len(), 0);
         assert_eq!(result.unwrap(), 5);
         assert_eq!(map.get(&1), None);
         assert_eq!(map.get(&2), None);
         assert_eq!(map.get(&4), None);
+        assert_eq!(map.len(), 0);
     }
 
     #[test]
@@ -137,14 +165,18 @@ mod tests {
         map.put(1, 1);
         map.put(2, 3);
         map.put(4, 5);
+        assert_eq!(map.len(), 3);
         assert_eq!(*map.get(&1).unwrap(), 1);
         assert_eq!(*map.get(&2).unwrap(), 3);
         assert_eq!(*map.get(&4).unwrap(), 5);
         assert_eq!(map.remove(&1).unwrap(), 1);
         assert_eq!(map.remove(&1), None);
+        assert_eq!(map.len(), 2);
         assert_eq!(map.remove(&2).unwrap(), 3);
         assert_eq!(map.remove(&2), None);
+        assert_eq!(map.len(), 1);
         assert_eq!(map.remove(&4).unwrap(), 5);
         assert_eq!(map.remove(&4), None);
+        assert_eq!(map.len(), 0);
     }
 }
