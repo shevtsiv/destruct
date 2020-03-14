@@ -37,28 +37,28 @@ impl<T: PartialEq> LinkedList<T> {
 
     pub fn get_tail(&self) -> Option<&T> {
         // Empty LinkedList has no head
-        if let Some(ref head) = self.head {
+        return if let Some(ref head) = self.head {
             let mut tail = head;
             // Loop until the last node is found
             while let Some(ref next) = tail.next_node {
                 tail = next;
             }
-            return Some(&tail.data);
+            Some(&tail.data)
         } else {
-            return None;
-        }
+            None
+        };
     }
 
     pub fn get_tail_mut(&mut self) -> Option<&mut T> {
-        if let Some(ref mut head) = self.head {
+        return if let Some(ref mut head) = self.head {
             let mut tail = head;
             while tail.has_next() {
                 tail = tail.next_node.as_mut().unwrap();
             }
-            return Some(&mut tail.data);
+            Some(&mut tail.data)
         } else {
-            return None;
-        }
+            None
+        };
     }
 
     pub fn new() -> Self {
@@ -107,7 +107,7 @@ impl<T: PartialEq> LinkedList<T> {
     }
 
     fn find_mut(&mut self, value: &T) -> Option<&mut LinkedListNode<T>> {
-        if let Some(ref mut head) = self.head {
+        return if let Some(ref mut head) = self.head {
             let mut node = head;
             while &node.data != value {
                 if let Some(ref mut next) = node.next_node {
@@ -116,10 +116,10 @@ impl<T: PartialEq> LinkedList<T> {
                     return None;
                 }
             }
-            return Some(node);
+            Some(node)
         } else {
-            return None;
-        }
+            None
+        };
     }
 
     pub fn delete(&mut self, value: &T) {
@@ -187,7 +187,7 @@ impl<T: PartialEq> LinkedList<T> {
     where
         F: Fn(&T) -> bool,
     {
-        if let Some(mut node) = self.head.as_ref() {
+        return if let Some(mut node) = self.head.as_ref() {
             while !predicate(&node.data) {
                 if let Some(ref next) = node.next_node {
                     node = next;
@@ -195,14 +195,14 @@ impl<T: PartialEq> LinkedList<T> {
                     return false;
                 }
             }
-            return true;
+            true
         } else {
-            return false;
-        }
+            false
+        };
     }
 
     fn get_prev_node(&mut self, value: &T) -> Option<&mut Box<LinkedListNode<T>>> {
-        if let Some(ref mut head) = self.head {
+        return if let Some(ref mut head) = self.head {
             let mut node = head;
             while let Some(ref next) = node.next_node {
                 if &next.data == value {
@@ -211,17 +211,17 @@ impl<T: PartialEq> LinkedList<T> {
                     node = node.next_node.as_mut().unwrap();
                 }
             }
-            return None;
+            None
         } else {
-            return None;
-        }
+            None
+        };
     }
 
     fn get_prev_node_match<F>(&mut self, predicate: &F) -> Option<&mut Box<LinkedListNode<T>>>
     where
         F: Fn(&T) -> bool,
     {
-        if let Some(ref mut head) = self.head {
+        return if let Some(ref mut head) = self.head {
             let mut node = head;
             while let Some(ref next) = node.next_node {
                 if predicate(&next.data) {
@@ -230,10 +230,10 @@ impl<T: PartialEq> LinkedList<T> {
                     node = node.next_node.as_mut().unwrap();
                 }
             }
-            return None;
+            None
         } else {
-            return None;
-        }
+            None
+        };
     }
 
     pub fn len(&self) -> usize {
