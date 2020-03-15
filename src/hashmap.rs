@@ -2,18 +2,17 @@ use crate::linked_list::LinkedList;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
-pub struct HashMap<K: Hash + PartialEq, V: PartialEq> {
+pub struct HashMap<K: Hash + PartialEq, V> {
     buckets: Vec<LinkedList<Entry<K, V>>>,
     size: usize,
 }
 
-#[derive(PartialEq)]
-struct Entry<K: Hash + PartialEq, V: PartialEq> {
+struct Entry<K: Hash + PartialEq, V> {
     key: K,
     value: V,
 }
 
-impl<K: Hash + PartialEq, V: PartialEq> HashMap<K, V> {
+impl<K: Hash + PartialEq, V> HashMap<K, V> {
     pub fn put(&mut self, key: K, value: V) {
         let index = self.key_to_index(&key);
         let entry_list = &mut self.buckets[index];
@@ -79,6 +78,12 @@ impl<K: Hash + PartialEq, V: PartialEq> HashMap<K, V> {
         let mut hasher = DefaultHasher::new();
         key.hash(&mut hasher);
         hasher.finish() as usize
+    }
+}
+
+impl<K: Hash + PartialEq, V> PartialEq for Entry<K, V> {
+    fn eq(&self, other: &Self) -> bool {
+        self.key == other.key
     }
 }
 
