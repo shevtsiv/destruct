@@ -43,6 +43,19 @@ impl<K: Hash + PartialEq, V> HashMap<K, V> {
             })
     }
 
+    pub fn keys(&self) -> Vec<&K> {
+        let mut result = Vec::with_capacity(self.size);
+        for bucket in &self.buckets {
+            for entry_elem in bucket.iter() {
+                if result.contains(&&entry_elem.key) {
+                    continue;
+                }
+                result.push(&entry_elem.key);
+            }
+        }
+        result
+    }
+
     pub fn new() -> Self {
         let initial_capacity = 32;
         let mut vec = Vec::with_capacity(initial_capacity);
@@ -183,5 +196,21 @@ mod tests {
         assert_eq!(map.remove(&4).unwrap(), 5);
         assert_eq!(map.remove(&4), None);
         assert_eq!(map.len(), 0);
+    }
+
+    // TODO: Write a similar test with the keys' hashcode collision to ensure no duplicates result
+    #[test]
+    fn keys() {
+        let mut map: HashMap<&str, i32> = HashMap::with_capacity(10);
+        map.put("key1", 1);
+        map.put("key2", 2);
+        map.put("key3", 3);
+        map.put("key4", 4);
+        let mut keys = map.keys().into_iter();
+        assert_eq!(keys.len(), 4);
+        assert_eq!(*keys.next().unwrap(), "key4");
+        assert_eq!(*keys.next().unwrap(), "key3");
+        assert_eq!(*keys.next().unwrap(), "key2");
+        assert_eq!(*keys.next().unwrap(), "key1");
     }
 }
